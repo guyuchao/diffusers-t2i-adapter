@@ -41,6 +41,7 @@ else:
         UNet2DConditionModel,
         UNet2DModel,
         VQModel,
+        Adapter,
     )
     from .optimization import (
         get_constant_schedule,
@@ -112,6 +113,7 @@ else:
         LDMTextToImagePipeline,
         PaintByExamplePipeline,
         SemanticStableDiffusionPipeline,
+        StableDiffusionAdapterPipeline,
         StableDiffusionAttendAndExcitePipeline,
         StableDiffusionDepth2ImgPipeline,
         StableDiffusionImageVariationPipeline,

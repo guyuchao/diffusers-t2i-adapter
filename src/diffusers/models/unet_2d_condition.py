@@ -492,6 +492,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         timestep_cond: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         cross_attention_kwargs: Optional[Dict[str, Any]] = None,
+        downsample_adapter_states: Optional[List[torch.Tensor]] = None,
         return_dict: bool = True,
     ) -> Union[UNet2DConditionOutput, Tuple]:
         r"""
@@ -574,19 +575,34 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         sample = self.conv_in(sample)
 
         # 3. down
+        if downsample_adapter_states:
+            if len(downsample_adapter_states) != len(self.down_blocks):
+                raise ValueError(
+                    f"""UNet2DModel doesn't recive correct amount of adapter_states, 
+                    expecting {len(self.down_blocks)} but got {len(downsample_adapter_states)} instead"""
+                )
+
         down_block_res_samples = (sample,)
-        for downsample_block in self.down_blocks:
+        for idx, downsample_block in enumerate(self.down_blocks):
             if hasattr(downsample_block, "has_cross_attention") and downsample_block.has_cross_attention:
+                additional_kwargs = {}
+                if downsample_adapter_states and idx < len(downsample_adapter_states):
+                    additional_kwargs['adapter_state'] = downsample_adapter_states[idx]
+                
                 sample, res_samples = downsample_block(
                     hidden_states=sample,
                     temb=emb,
                     encoder_hidden_states=encoder_hidden_states,
                     attention_mask=attention_mask,
                     cross_attention_kwargs=cross_attention_kwargs,
+                    **additional_kwargs,
                 )
             else:
                 sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
-
+            
+                if downsample_adapter_states and idx < len(downsample_adapter_states):
+                    sample += downsample_adapter_states[idx]
+            
             down_block_res_samples += res_samples
 
         # 4. mid

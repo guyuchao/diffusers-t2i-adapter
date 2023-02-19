@@ -23,20 +23,6 @@ def get_color_masks(image: torch.Tensor) -> Dict[Tuple[int], torch.Tensor]:
 
 
 mask = Image.open("motor.png")
-# mask = torch.tensor(np.array(mask))[..., :3]
-# c2mask = get_color_masks(mask)
-# word2color = {
-#     (1, 47, 71): "magical portal",
-#     (38, 192, 212): "starry night",
-#     (48, 167, 26): "purple trees",
-#     (100, 121, 135): "road",
-#     (115, 232, 103): "abandoned city",
-#     (133, 94, 253): "grass",
-# }
-# word2mask = {
-#     word2color[k]: v
-#     for k, v in c2mask.items()
-# }
 
 prompt = [
     "A black Honda motorcycle parked in front of a garage",
@@ -44,22 +30,22 @@ prompt = [
 ]
 
 
-model_name = "CompVis/stable-diffusion-v1-4"
-adapter_ckpt = "/home/ron/Downloads/t2iadapter_seg_sd14v1.pth"
-# model_name = "stabilityai/stable-diffusion-2"
-# pipe = StableDiffusionPipeline.from_pretrained(model_name, revision="fp16", torch_dtype=torch.float16)
-pipe = StableDiffusionAdapterPipeline.from_pretrained(model_name, revision="fp16", torch_dtype=torch.float16)
+# model_name = "CompVis/stable-diffusion-v1-4"
+model_name = "RzZ/sd-v1-4-adapter"
+pipe = StableDiffusionAdapterPipeline.from_pretrained(model_name, torch_dtype=torch.float16)
 
 # HACK: side load adapter module
-pipe.adapter = Adapter(
-    cin=int(3*64), 
-    channels=[320, 640, 1280, 1280][:4], 
-    nums_rb=2, 
-    ksize=1, 
-    sk=True, 
-    use_conv=False
-).to('cuda')
-pipe.adapter.load_state_dict(torch.load(adapter_ckpt))
+# adapter_ckpt = "/home/ron/Downloads/t2iadapter_seg_sd14v1.pth"
+# pipe.adapter = Adapter(
+#     cin=int(3*64), 
+#     channels=[320, 640, 1280, 1280][:4], 
+#     nums_rb=2, 
+#     ksize=1, 
+#     sk=True, 
+#     use_conv=False
+# ).to('cuda')
+# pipe.adapter.load_state_dict(torch.load(adapter_ckpt))
+
 pipe.to("cuda")
 
 images = pipe(prompt, [mask, mask]).images

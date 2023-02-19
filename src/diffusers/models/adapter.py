@@ -2,6 +2,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .modeling_utils import ModelMixin
+from ..configuration_utils import ConfigMixin, register_to_config
 
 
 def conv_nd(dims, *args, **kwargs):
@@ -95,7 +97,9 @@ class ResnetBlock(nn.Module):
             return h + x
 
 
-class Adapter(nn.Module):
+class Adapter(ModelMixin, ConfigMixin):
+    
+    @register_to_config
     def __init__(self, channels=[320, 640, 1280, 1280], nums_rb=3, cin=64, ksize=3, sk=False, use_conv=True):
         super(Adapter, self).__init__()
         self.unshuffle = nn.PixelUnshuffle(8)

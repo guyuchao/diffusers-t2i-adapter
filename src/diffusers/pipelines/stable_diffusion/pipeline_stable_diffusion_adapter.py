@@ -283,10 +283,8 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         # 7. Denoising loop
         adapter_dw_state = self.adapter(adapter_input)
         if do_classifier_free_guidance:
-            adapter_dw_state = [
-                torch.cat([state] * 2, dim=0)
-                for state in adapter_dw_state
-            ]
+            for k, v in adapter_dw_state.items():
+                adapter_dw_state[k] = torch.cat([v] * 2, dim=0)
 
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=num_inference_steps) as progress_bar:
@@ -294,14 +292,15 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
-
+                
+                self.unet.sideload_processor.update_sideload(adapter_dw_state)
                 # predict the noise residual
                 noise_pred = self.unet(
                     latent_model_input,
                     t,
                     encoder_hidden_states=prompt_embeds,
                     cross_attention_kwargs=cross_attention_kwargs,
-                    downsample_adapter_states=adapter_dw_state,
+                    # downsample_adapter_states=adapter_dw_state,
                 ).sample
 
                 # perform guidance

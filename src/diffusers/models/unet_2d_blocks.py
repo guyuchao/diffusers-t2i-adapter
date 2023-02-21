@@ -22,6 +22,7 @@ from .cross_attention import CrossAttention, CrossAttnAddedKVProcessor
 from .dual_transformer_2d import DualTransformer2DModel
 from .resnet import Downsample2D, FirDownsample2D, FirUpsample2D, KDownsample2D, KUpsample2D, ResnetBlock2D, Upsample2D
 from .transformer_2d import Transformer2DModel
+from .modeling_utils import SideloadMixin
 
 
 def get_down_block(
@@ -720,7 +721,7 @@ class AttnDownBlock2D(nn.Module):
         return hidden_states, output_states
 
 
-class CrossAttnDownBlock2D(nn.Module):
+class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
     def __init__(
         self,
         in_channels: int,

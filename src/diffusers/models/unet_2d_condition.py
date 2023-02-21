@@ -24,6 +24,7 @@ from ..utils import BaseOutput, logging
 from .cross_attention import AttnProcessor
 from .embeddings import GaussianFourierProjection, TimestepEmbedding, Timesteps
 from .modeling_utils import ModelMixin
+from .sideload_procssor import SideloadProcessor
 from .unet_2d_blocks import (
     CrossAttnDownBlock2D,
     CrossAttnUpBlock2D,
@@ -360,6 +361,9 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             block_out_channels[0], out_channels, kernel_size=conv_out_kernel, padding=conv_out_padding
         )
 
+        self.sideload_processor = SideloadProcessor()
+        self.set_sideload_processor(self.sideload_processor)  # set a default sideload processor
+
     @property
     def attn_processors(self) -> Dict[str, AttnProcessor]:
         r"""
@@ -478,6 +482,18 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         reversed_slice_size = list(reversed(slice_size))
         for module in self.children():
             fn_recursive_set_attention_slice(module, reversed_slice_size)
+    
+    def set_sideload_processor(self, processor: SideloadProcessor):
+
+        def fn_recursive_sideload_processor(name: str, module: torch.nn.Module, processor):
+            if hasattr(module, "set_sideload_processor"):
+                module.set_sideload_processor(name, processor)
+
+            for sub_name, child in module.named_children():
+                fn_recursive_sideload_processor(f"{name}.{sub_name}", child, processor)
+
+        for name, module in self.named_children():
+            fn_recursive_sideload_processor(name, module, processor)
 
     def _set_gradient_checkpointing(self, module, value=False):
         if isinstance(module, (CrossAttnDownBlock2D, DownBlock2D, CrossAttnUpBlock2D, UpBlock2D)):

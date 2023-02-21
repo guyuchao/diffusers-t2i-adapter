@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .modeling_utils import ModelMixin
+from .modeling_utils import ModelMixin, Sideloads
 from ..configuration_utils import ConfigMixin, register_to_config
 
 
@@ -131,4 +131,9 @@ class Adapter(ModelMixin, ConfigMixin):
                 x = self.body[idx](x)
             features.append(x)
 
-        return features
+        return Sideloads({
+            "down_blocks.0.attentions.1": features[0],
+            "down_blocks.1.attentions.1": features[1],
+            "down_blocks.2.attentions.1": features[2],
+            "down_blocks.3.resnets.1": features[3],
+        })

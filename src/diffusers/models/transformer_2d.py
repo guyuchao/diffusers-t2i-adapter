@@ -23,7 +23,7 @@ from ..models.embeddings import ImagePositionalEmbeddings
 from ..utils import BaseOutput, deprecate
 from .attention import BasicTransformerBlock
 from .embeddings import PatchEmbed
-from .modeling_utils import ModelMixin
+from .modeling_utils import ModelMixin, SideloadMixin
 
 
 @dataclass
@@ -38,7 +38,7 @@ class Transformer2DModelOutput(BaseOutput):
     sample: torch.FloatTensor
 
 
-class Transformer2DModel(ModelMixin, ConfigMixin):
+class Transformer2DModel(SideloadMixin, ModelMixin, ConfigMixin):
     """
     Transformer model for image-like data. Takes either discrete (classes of vector embeddings) or continuous (actual
     embeddings) inputs.

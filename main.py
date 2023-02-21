@@ -6,6 +6,26 @@ from PIL import Image
 from diffusers import StableDiffusionPipeline, StableDiffusionAdapterPipeline, Adapter
 
 
+# class B:
+    
+#     def __call__(self, x):
+#         print('pre: ', x)
+#         y = super().__call__(x)
+#         print('post: ', x)
+#         return x
+
+# class A(B, torch.nn.Module):
+    
+#     def forward(self, x):
+#         print('forward', x)
+#         return x
+
+
+# a = A()
+# a(torch.zeros([2]))
+# breakpoint()
+
+
 @torch.no_grad()
 def get_color_masks(image: torch.Tensor) -> Dict[Tuple[int], torch.Tensor]:
     h, w, c = image.shape
@@ -27,6 +47,7 @@ mask = Image.open("motor.png")
 prompt = [
     "A black Honda motorcycle parked in front of a garage",
     "A red-blue Honda motorcycle parked in front of a garage",
+    "A green Honda motorcycle parked in a desert",
 ]
 
 
@@ -48,8 +69,13 @@ pipe = StableDiffusionAdapterPipeline.from_pretrained(model_name, torch_dtype=to
 
 pipe.to("cuda")
 
-images = pipe(prompt, [mask, mask]).images
+images = pipe(prompt, [mask] * len(prompt)).images
 
-for image in images:
+plt.subplot(2, 2, 1)
+plt.imshow(mask)
+
+for i, image in enumerate(images):
+    plt.subplot(2, 2, 2 + i)
     plt.imshow(image)
-    plt.show()
+    plt.title(prompt[i], fontsize=24)
+plt.show()

@@ -448,7 +448,7 @@ class UNetMidBlock2D(nn.Module):
         return hidden_states
 
 
-class UNetMidBlock2DCrossAttn(nn.Module):
+class UNetMidBlock2DCrossAttn(SideloadMixin, nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -1700,7 +1700,7 @@ class AttnUpBlock2D(nn.Module):
         return hidden_states
 
 
-class CrossAttnUpBlock2D(nn.Module):
+class CrossAttnUpBlock2D(SideloadMixin, nn.Module):
     def __init__(
         self,
         in_channels: int,

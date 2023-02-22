@@ -907,9 +907,13 @@ def _get_model_file(
 
 
 class Sideloads(UserDict):
+    """
+    A dataclass that wrap all adpater's output togather, 
+    it also keep track the mapping between each adpater state and targeted layer.
+    """
 
     def __setitem__(self, name: str, state: Tensor):
-        # TODO: check state dtype, device
+        # TODO: check state dtype/device, maybe check the name follow nn.module naming convention
         super().__setitem__(name, state)
     
     def to(self, torch_device: Union[str, torch.device]):
@@ -921,6 +925,10 @@ class Sideloads(UserDict):
 
 
 class SideloadMixin:
+    """
+    A forward-pass hook that connect targeted layer/nn.module to sideload processor,
+    this mixin also keep the module name availible within the object.
+    """
 
     def set_sideload_processor(self, module_name, processor):
         self._sideload_processor = processor

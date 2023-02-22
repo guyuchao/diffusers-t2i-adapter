@@ -281,10 +281,10 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
 
         # 7. Denoising loop
-        adapter_dw_state = self.adapter(adapter_input)
+        adapter_state = self.adapter(adapter_input)
         if do_classifier_free_guidance:
-            for k, v in adapter_dw_state.items():
-                adapter_dw_state[k] = torch.cat([v] * 2, dim=0)
+            for k, v in adapter_state.items():
+                adapter_state[k] = torch.cat([v] * 2, dim=0)
 
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
         with self.progress_bar(total=num_inference_steps) as progress_bar:
@@ -293,7 +293,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
                 
-                self.unet.sideload_processor.update_sideload(adapter_dw_state)
+                self.unet.sideload_processor.update_sideload(adapter_state)
                 # predict the noise residual
                 noise_pred = self.unet(
                     latent_model_input,

@@ -492,6 +492,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             for sub_name, child in module.named_children():
                 fn_recursive_sideload_processor(f"{name}.{sub_name}", child, processor)
 
+        self.sideload_processor = processor
         for name, module in self.named_children():
             fn_recursive_sideload_processor(name, module, processor)
 

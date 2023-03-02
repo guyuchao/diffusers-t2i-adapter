@@ -1,64 +1,12 @@
 # modify from https://github.com/TencentARC/T2I-Adapter/blob/main/ldm/modules/encoders/adapter.py
+from typing import Iterable
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from .resnet import Downsample2D
 from .modeling_utils import ModelMixin, Sideloads
 from ..configuration_utils import ConfigMixin, register_to_config
-
-
-def conv_nd(dims, *args, **kwargs):
-    """
-    Create a 1D, 2D, or 3D convolution module.
-    """
-    if dims == 1:
-        return nn.Conv1d(*args, **kwargs)
-    elif dims == 2:
-        return nn.Conv2d(*args, **kwargs)
-    elif dims == 3:
-        return nn.Conv3d(*args, **kwargs)
-    raise ValueError(f"unsupported dimensions: {dims}")
-
-
-def avg_pool_nd(dims, *args, **kwargs):
-    """
-    Create a 1D, 2D, or 3D average pooling module.
-    """
-    if dims == 1:
-        return nn.AvgPool1d(*args, **kwargs)
-    elif dims == 2:
-        return nn.AvgPool2d(*args, **kwargs)
-    elif dims == 3:
-        return nn.AvgPool3d(*args, **kwargs)
-    raise ValueError(f"unsupported dimensions: {dims}")
-
-
-class Downsample(nn.Module):
-    """
-    A downsampling layer with an optional convolution.
-    :param channels: channels in the inputs and outputs.
-    :param use_conv: a bool determining if a convolution is applied.
-    :param dims: determines if the signal is 1D, 2D, or 3D. If 3D, then
-                 downsampling occurs in the inner-two dimensions.
-    """
-
-    def __init__(self, channels, use_conv, dims=2, out_channels=None,padding=1):
-        super().__init__()
-        self.channels = channels
-        self.out_channels = out_channels or channels
-        self.use_conv = use_conv
-        self.dims = dims
-        stride = 2 if dims != 3 else (1, 2, 2)
-        if use_conv:
-            self.op = conv_nd(
-                dims, self.channels, self.out_channels, 3, stride=stride, padding=padding
-            )
-        else:
-            assert self.channels == self.out_channels
-            self.op = avg_pool_nd(dims, kernel_size=stride, stride=stride)
-
-    def forward(self, x):
-        assert x.shape[1] == self.channels
-        return self.op(x)
 
 
 class ResnetBlock(nn.Module):
@@ -80,7 +28,7 @@ class ResnetBlock(nn.Module):
 
         self.down = down
         if self.down == True:
-            self.down_opt = Downsample(in_c, use_conv=use_conv)
+            self.down_opt = Downsample2D(in_c, use_conv=use_conv)
 
     def forward(self, x):
         if self.down == True:
@@ -100,34 +48,58 @@ class ResnetBlock(nn.Module):
 class Adapter(ModelMixin, ConfigMixin):
     
     @register_to_config
-    def __init__(self, channels=[320, 640, 1280, 1280], nums_rb=3, cin=64, ksize=3, sk=False, use_conv=True):
+    def __init__(
+            self, 
+            channels=[320, 640, 1280, 1280],
+            num_res_blocks=3,
+            channels_in=64,
+            kerenl_size=3,
+            res_block_skip=False, 
+            use_conv=False
+        ):
         super(Adapter, self).__init__()
+        
         self.unshuffle = nn.PixelUnshuffle(8)
         self.channels = channels
-        self.nums_rb = nums_rb
+        self.num_res_blocks = num_res_blocks
         self.body = []
+        
         for i in range(len(channels)):
-            for j in range(nums_rb):
+            for j in range(num_res_blocks):
                 if (i != 0) and (j == 0):
                     self.body.append(
-                        ResnetBlock(channels[i-1], channels[i], down=True, ksize=ksize, sk=sk, use_conv=use_conv)
+                        ResnetBlock(
+                            channels[i-1],
+                            channels[i],
+                            down=True,
+                            ksize=kerenl_size,
+                            sk=res_block_skip,
+                            use_conv=use_conv
+                        )
                     )
                 else:
                     self.body.append(
-                        ResnetBlock(channels[i], channels[i], down=False, ksize=ksize, sk=sk, use_conv=use_conv)
+                        ResnetBlock(
+                            channels[i],
+                            channels[i],
+                            down=False,
+                            ksize=kerenl_size,
+                            sk=res_block_skip,
+                            use_conv=use_conv
+                        )
                     )
         self.body = nn.ModuleList(self.body)
-        self.conv_in = nn.Conv2d(cin,channels[0], 3, 1, 1)
+        self.conv_in = nn.Conv2d(channels_in,channels[0], 3, 1, 1)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         # unshuffle
         x = self.unshuffle(x)
         # extract features
         features = []
         x = self.conv_in(x)
         for i in range(len(self.channels)):
-            for j in range(self.nums_rb):
-                idx = i*self.nums_rb +j
+            for j in range(self.num_res_blocks):
+                idx = i * self.num_res_blocks + j
                 x = self.body[idx](x)
             features.append(x)
 
@@ -137,3 +109,41 @@ class Adapter(ModelMixin, ConfigMixin):
             "down_blocks.2.attentions.1": features[2],
             "down_blocks.3.resnets.1": features[3],
         })
+
+
+class MultiAdapter(ModelMixin, ConfigMixin):
+    
+    @register_to_config
+    def __init__(
+            self,
+            num_adapter=2,
+            adapter_weights=None,
+            channels=[320, 640, 1280, 1280],
+            num_res_blocks=3,
+            channels_in=64,
+            kerenl_size=3,
+            res_block_skip=False, 
+            use_conv=False,
+        ):
+        super(MultiAdapter, self).__init__()
+
+        self.adapters = nn.ModuleList([
+            Adapter(
+                channels=channels,
+                num_res_blocks=num_res_blocks,
+                channels_in=channels_in,
+                kerenl_size=kerenl_size,
+                res_block_skip=res_block_skip,
+                use_conv=use_conv,
+            ) for _ in range(num_adapter)
+        ])
+        if adapter_weights is None:
+            self.adapter_weights = [1 / num_adapter] * num_adapter
+        else:
+            self.adapter_weights = adapter_weights
+    
+    def forward(self, xs: Iterable[torch.Tensor]):
+        accume_state = 0
+        for x, w, adapter in zip(xs, self.adapter_weights, self.adapters):
+            accume_state += w * adapter(x)
+        return accume_state

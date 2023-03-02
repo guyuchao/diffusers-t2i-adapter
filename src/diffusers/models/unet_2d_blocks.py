@@ -815,7 +815,6 @@ class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
         encoder_hidden_states=None, 
         attention_mask=None, 
         cross_attention_kwargs=None,
-        adapter_state=None,
     ):
         # TODO(Patrick, William) - attention mask is not used
         output_states = ()
@@ -848,9 +847,6 @@ class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
                 ).sample
 
             output_states += (hidden_states,)
-
-        if adapter_state is not None:
-            hidden_states += adapter_state
 
         if self.downsamplers is not None:
             for downsampler in self.downsamplers:

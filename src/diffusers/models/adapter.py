@@ -46,31 +46,41 @@ class ResnetBlock(nn.Module):
 
 
 class Adapter(ModelMixin, ConfigMixin):
+    DEFAULT_TARGET = [
+        "down_blocks.0.attentions.1",
+        "down_blocks.1.attentions.1",
+        "down_blocks.2.attentions.1",
+        "down_blocks.3.resnets.1",
+    ]
     
     @register_to_config
     def __init__(
             self, 
-            channels=[320, 640, 1280, 1280],
+            block_out_channels=[320, 640, 1280, 1280],
             num_res_blocks=3,
             channels_in=64,
             kerenl_size=3,
             res_block_skip=False, 
-            use_conv=False
+            use_conv=False,
+            target_layers=DEFAULT_TARGET,
+            input_scale_factor=8,
         ):
         super(Adapter, self).__init__()
         
-        self.unshuffle = nn.PixelUnshuffle(8)
-        self.channels = channels
+        self.num_downsample_blocks = len(block_out_channels)
+        self.unshuffle = nn.PixelUnshuffle(input_scale_factor)
+        self.block_out_channels = block_out_channels
+        self.target_layers = target_layers
         self.num_res_blocks = num_res_blocks
         self.body = []
         
-        for i in range(len(channels)):
+        for i in range(self.num_downsample_blocks):
             for j in range(num_res_blocks):
                 if (i != 0) and (j == 0):
                     self.body.append(
                         ResnetBlock(
-                            channels[i-1],
-                            channels[i],
+                            block_out_channels[i-1],
+                            block_out_channels[i],
                             down=True,
                             ksize=kerenl_size,
                             sk=res_block_skip,
@@ -80,8 +90,8 @@ class Adapter(ModelMixin, ConfigMixin):
                 else:
                     self.body.append(
                         ResnetBlock(
-                            channels[i],
-                            channels[i],
+                            block_out_channels[i],
+                            block_out_channels[i],
                             down=False,
                             ksize=kerenl_size,
                             sk=res_block_skip,
@@ -89,7 +99,7 @@ class Adapter(ModelMixin, ConfigMixin):
                         )
                     )
         self.body = nn.ModuleList(self.body)
-        self.conv_in = nn.Conv2d(channels_in,channels[0], 3, 1, 1)
+        self.conv_in = nn.Conv2d(channels_in, block_out_channels[0], 3, 1, 1)
 
     def forward(self, x: torch.Tensor):
         # unshuffle
@@ -97,17 +107,15 @@ class Adapter(ModelMixin, ConfigMixin):
         # extract features
         features = []
         x = self.conv_in(x)
-        for i in range(len(self.channels)):
+        for i in range(self.num_downsample_blocks):
             for j in range(self.num_res_blocks):
                 idx = i * self.num_res_blocks + j
                 x = self.body[idx](x)
             features.append(x)
 
         return Sideloads({
-            "down_blocks.0.attentions.1": features[0],
-            "down_blocks.1.attentions.1": features[1],
-            "down_blocks.2.attentions.1": features[2],
-            "down_blocks.3.resnets.1": features[3],
+            layer_name: h 
+            for layer_name, h in zip(self.target_layers, features)
         })
 
 
@@ -118,23 +126,27 @@ class MultiAdapter(ModelMixin, ConfigMixin):
             self,
             num_adapter=2,
             adapter_weights=None,
-            channels=[320, 640, 1280, 1280],
+            block_out_channels=[320, 640, 1280, 1280],
             num_res_blocks=3,
             channels_in=64,
             kerenl_size=3,
             res_block_skip=False, 
             use_conv=False,
+            target_layers=Adapter.DEFAULT_TARGET,
+            input_scale_factor=8,
         ):
         super(MultiAdapter, self).__init__()
 
         self.adapters = nn.ModuleList([
             Adapter(
-                channels=channels,
+                block_out_channels=block_out_channels,
                 num_res_blocks=num_res_blocks,
                 channels_in=channels_in,
                 kerenl_size=kerenl_size,
                 res_block_skip=res_block_skip,
                 use_conv=use_conv,
+                target_layers=target_layers,
+                input_scale_factor=input_scale_factor,
             ) for _ in range(num_adapter)
         ])
         if adapter_weights is None:

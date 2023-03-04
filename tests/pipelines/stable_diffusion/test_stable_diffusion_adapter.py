@@ -197,9 +197,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         generator = torch.Generator(device=generator_device).manual_seed(seed)
         # TODO: udpate asset URL
         image_urls = {
-            "segmentation": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/segmentation/sample_input.png",
-            "keypose": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/keypose/sample_input.png",
-            "depth": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/depth/sample_input.png",
+            "segmentation": "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/segmentation/sample_input.png",
+            "keypose": "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/keypose/sample_input.png",
+            "depth": "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/depth/sample_input.png",
         }
         prompt_by_rev = {
             "segmentation": "A black Honda motorcycle parked in front of a garage",
@@ -219,7 +219,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
     def test_stable_diffusion_segmentation_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter", revision="segmentation", safety_checker=None
+            "RzZ/sd-v1-4-adapter-pipeline", revision="segmentation", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -229,13 +229,13 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         image = pipe(**inputs).images
         
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/segmentation/sample_output.npy")
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/segmentation/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
 
     def test_stable_diffusion_keypose_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter", revision="keypose", safety_checker=None
+            "RzZ/sd-v1-4-adapter-pipeline", revision="keypose", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -245,13 +245,13 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         image = pipe(**inputs).images
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/keypose/sample_output.npy")
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/keypose/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
 
     def test_stable_diffusion_depth_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter", revision="depth", safety_checker=None
+            "RzZ/sd-v1-4-adapter-pipeline", revision="depth", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -261,7 +261,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         image = pipe(**inputs).images
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/depth/sample_output.npy")
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/depth/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
 
@@ -271,7 +271,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         torch.cuda.reset_peak_memory_stats()
 
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter", safety_checker=None, torch_dtype=torch.float16
+            "RzZ/sd-v1-4-adapter-pipeline", safety_checker=None, torch_dtype=torch.float16
         )
         pipe = pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -296,7 +296,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
     #     # Normal inference
 
     #     pipe = StableDiffusionAdapterPipeline.from_pretrained(
-    #         "RzZ/sd-v1-4-adapter",
+    #         "RzZ/sd-v1-4-adapter-pipeline",
     #         safety_checker=None,
     #         torch_dtype=torch.float16,
     #     )
@@ -309,7 +309,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
     #     # Reload but don't move to cuda
     #     pipe = StableDiffusionAdapterPipeline.from_pretrained(
-    #         "RzZ/sd-v1-4-adapter",
+    #         "RzZ/sd-v1-4-adapter-pipeline",
     #         safety_checker=None,
     #         torch_dtype=torch.float16,
     #     )

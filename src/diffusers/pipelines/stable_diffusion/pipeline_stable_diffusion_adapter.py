@@ -12,29 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import torch
 import numpy as np
+import torch
 from PIL import Image as PIL_Image
-from packaging import version
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
-from ...configuration_utils import FrozenDict
-from ...models import AutoencoderKL, UNet2DConditionModel, Adapter
+from ...models import Adapter, AutoencoderKL, UNet2DConditionModel
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import (
-    deprecate,
+    PIL_INTERPOLATION,
+    logging,
     is_accelerate_available,
     is_accelerate_version,
-    logging,
-    randn_tensor,
     replace_example_docstring,
-    PIL_INTERPOLATION,
 )
-from .pipeline_stable_diffusion import StableDiffusionPipeline
 from . import StableDiffusionPipelineOutput
+from .pipeline_stable_diffusion import StableDiffusionPipeline
 from .safety_checker import StableDiffusionSafetyChecker
 
 
@@ -69,10 +64,18 @@ def preprocess(image):
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)
+        # NOTE: offical adapter weight is trained with [0, 1] value space
         # image = 2.0 * image - 1.0
         image = torch.from_numpy(image)
     elif isinstance(image[0], torch.Tensor):
-        image = torch.cat(image, dim=0)
+        if image[0].ndim == 3:
+            image = torch.stack(image, dim=0)
+        elif image[0].ndim == 4:
+            image = torch.cat(image, dim=0)
+        else:
+            raise ValueError(
+                f"Invalid image tensor! Expecting image tensor with 3 or 4 dimension, but recive: {image[0].ndim}"
+            )
     return image
 
 
@@ -118,19 +121,65 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         requires_safety_checker: bool = True,
     ):
         super().__init__(
-            vae,
-            text_encoder,
-            tokenizer,
-            unet,
-            scheduler,
-            safety_checker,
-            feature_extractor,
-            requires_safety_checker
+            vae, text_encoder, tokenizer, unet, scheduler, safety_checker, feature_extractor, requires_safety_checker
         )
         # TODO: make sure from_pretrain/save_pretrain still work
         self.register_modules(adapter=adapter)
         # self.adapter = adapter
     
+    def enable_sequential_cpu_offload(self, gpu_id=0):
+        r"""
+        Offloads all models to CPU using accelerate, significantly reducing memory usage. When called, unet,
+        text_encoder, vae and safety checker have their state dicts saved to CPU and then are moved to a
+        `torch.device('meta') and loaded to GPU only when their specific submodule has its `forward` method called.
+        Note that offloading happens on a submodule basis. Memory savings are higher than with
+        `enable_model_cpu_offload`, but performance is lower.
+        """
+        if is_accelerate_available() and is_accelerate_version(">=", "0.14.0"):
+            from accelerate import cpu_offload
+        else:
+            raise ImportError("`enable_sequential_cpu_offload` requires `accelerate v0.14.0` or higher")
+
+        device = torch.device(f"cuda:{gpu_id}")
+
+        if self.device.type != "cpu":
+            self.to("cpu", silence_dtype_warnings=True)
+            torch.cuda.empty_cache()  # otherwise we don't see the memory savings (but they probably exist)
+
+        for cpu_offloaded_model in [self.unet, self.text_encoder, self.vae, self.adapter]:
+            cpu_offload(cpu_offloaded_model, device)
+
+        if self.safety_checker is not None:
+            cpu_offload(self.safety_checker, execution_device=device, offload_buffers=True)
+
+    def enable_model_cpu_offload(self, gpu_id=0):
+        r"""
+        Offloads all models to CPU using accelerate, reducing memory usage with a low impact on performance. Compared
+        to `enable_sequential_cpu_offload`, this method moves one whole model at a time to the GPU when its `forward`
+        method is called, and the model remains in GPU until the next model runs. Memory savings are lower than with
+        `enable_sequential_cpu_offload`, but performance is much better due to the iterative execution of the `unet`.
+        """
+        if is_accelerate_available() and is_accelerate_version(">=", "0.17.0.dev0"):
+            from accelerate import cpu_offload_with_hook
+        else:
+            raise ImportError("`enable_model_offload` requires `accelerate v0.17.0` or higher.")
+
+        device = torch.device(f"cuda:{gpu_id}")
+
+        if self.device.type != "cpu":
+            self.to("cpu", silence_dtype_warnings=True)
+            torch.cuda.empty_cache()  # otherwise we don't see the memory savings (but they probably exist)
+
+        hook = None
+        for cpu_offloaded_model in [self.text_encoder, self.unet, self.vae, self.adapter]:
+            _, hook = cpu_offload_with_hook(cpu_offloaded_model, device, prev_module_hook=hook)
+
+        if self.safety_checker is not None:
+            _, hook = cpu_offload_with_hook(self.safety_checker, device, prev_module_hook=hook)
+
+        # We'll offload the last model manually.
+        self.final_offload_hook = hook
+
     @torch.no_grad()
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
@@ -226,13 +275,14 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         # 0. Default height and width to unet
         height = height or self.unet.config.sample_size * self.vae_scale_factor
         width = width or self.unet.config.sample_size * self.vae_scale_factor
+        device = self._execution_device
 
         # 1. Check inputs. Raise error if not correct
         self.check_inputs(
             prompt, height, width, callback_steps, negative_prompt, prompt_embeds, negative_prompt_embeds
         )
-        
-        adapter_input = preprocess(adapter_input).to(self.device)
+
+        adapter_input = preprocess(adapter_input).to(device)
         adapter_input = adapter_input.to(self.adapter.dtype)
 
         # 2. Define call parameters
@@ -243,7 +293,6 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         else:
             batch_size = prompt_embeds.shape[0]
 
-        device = self._execution_device
         # here `guidance_scale` is defined analog to the guidance weight `w` of equation (2)
         # of the Imagen paper: https://arxiv.org/pdf/2205.11487.pdf . `guidance_scale = 1`
         # corresponds to doing no classifier free guidance.
@@ -292,7 +341,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
                 # expand the latents if we are doing classifier free guidance
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
-                
+
                 self.unet.sideload_processor.update_sideload(adapter_state)
                 # predict the noise residual
                 noise_pred = self.unet(

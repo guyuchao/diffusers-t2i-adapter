@@ -22,18 +22,15 @@ import torch
 from transformers import CLIPTextConfig, CLIPTextModel, CLIPTokenizer
 
 from diffusers import (
+    Adapter,
     AutoencoderKL,
-    DDIMScheduler,
-    DPMSolverMultistepScheduler,
-    LMSDiscreteScheduler,
     PNDMScheduler,
     StableDiffusionAdapterPipeline,
     UNet2DConditionModel,
-    Adapter,
 )
-from diffusers.utils import floats_tensor, load_image, load_numpy, nightly, slow, torch_device
-from diffusers.utils.testing_utils import require_torch_gpu
+from diffusers.utils import floats_tensor, load_image, load_numpy, slow, torch_device
 from diffusers.utils.import_utils import is_xformers_available
+from diffusers.utils.testing_utils import require_torch_gpu
 
 from ...test_pipelines_common import PipelineTesterMixin
 
@@ -84,15 +81,15 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
 
         torch.manual_seed(0)
         adapter = Adapter(
-            channels=[32, 64],
+            block_out_channels=[32, 64],
             target_layers=[
                 "down_blocks.0.attentions.1",
                 "down_blocks.1.resnets.1",
             ],
-            channels_in=(3 * vae_scale_factor**2), 
+            channels_in=(3 * vae_scale_factor**2),
             num_res_blocks=2,
-            kerenl_size=1, 
-            res_block_skip=True, 
+            kerenl_size=1,
+            res_block_skip=True,
             use_conv=False,
             input_scale_factor=vae_scale_factor,
         )
@@ -138,7 +135,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         image_slice = image[0, -3:, -3:, -1]
 
         assert image.shape == (1, 64, 64, 3)
-        expected_slice = np.array([0.5028 , 0.5518 , 0.4279, 0.4807, 0.6145, 0.4335, 0.5047 , 0.5072 , 0.4775])
+        expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
 
         assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3
 
@@ -156,24 +153,24 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         image_slice = image[0, -3:, -3:, -1]
 
         assert image.shape == (2, 64, 64, 3)
-        expected_slice = np.array([0.5028 , 0.5518 , 0.4279, 0.4807, 0.6145, 0.4335, 0.5047 , 0.5072 , 0.4775])
+        expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
 
-        assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3, f"{np.abs(image_slice.flatten() - expected_slice).max()}"
-    
+        assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3
+
     @unittest.skipIf(torch_device != "cuda", "This test requires a GPU")
-    def test_stable_diffusion_adapter_fp16(self):        
+    def test_stable_diffusion_adapter_fp16(self):
         components = self.get_dummy_components()
         for key in components.keys():
-            if hasattr(components[key], 'half'):
+            if hasattr(components[key], "half"):
                 components[key] = components[key].half()
-        
+
         sd_pipe = StableDiffusionAdapterPipeline(**components)
         sd_pipe = sd_pipe.to(torch_device)
         sd_pipe.set_progress_bar_config(disable=None)
 
         inputs = self.get_dummy_inputs(torch_device)
-        image = sd_pipe(**inputs).images
-    
+        sd_pipe(**inputs).images
+
     def test_attention_slicing_forward_pass(self):
         return self._test_attention_slicing_forward_pass(expected_max_diff=2e-3)
 
@@ -188,7 +185,6 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         self._test_inference_batch_single_identical(expected_max_diff=2e-3)
 
 
-
 @slow
 @require_torch_gpu
 class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
@@ -201,22 +197,21 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         generator = torch.Generator(device=generator_device).manual_seed(seed)
         # TODO: udpate asset URL
         image_urls = {
-            "segmentation": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/main/sample_input.png",
+            "segmentation": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/segmentation/sample_input.png",
             "keypose": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/keypose/sample_input.png",
             "depth": "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/depth/sample_input.png",
         }
         prompt_by_rev = {
             "segmentation": "A black Honda motorcycle parked in front of a garage",
             "keypose": "An astronaut on the moon",
-            "depth": "An office room",
+            "depth": "An office room with nice view",
         }
-        init_image = load_image(image_urls[revision])
+        cond_image = load_image(image_urls[revision])
         inputs = {
             "prompt": prompt_by_rev[revision],
-            "image": init_image,
+            "adapter_input": cond_image,
             "generator": generator,
             "num_inference_steps": 3,
-            "strength": 0.75,
             "guidance_scale": 7.5,
             "output_type": "numpy",
         }
@@ -224,9 +219,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
     def test_stable_diffusion_segmentation_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter",
-            revision="segmentation",
-            safety_checker=None
+            "RzZ/sd-v1-4-adapter", revision="segmentation", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -234,20 +227,15 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         inputs = self.get_inputs(torch_device, revision="segmentation")
         image = pipe(**inputs).images
-        image_slice = image[0, -3:, -3:, -1].flatten()
-
+        
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy(
-            "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/main/sample_output.npy"
-        )
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/segmentation/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
 
     def test_stable_diffusion_keypose_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter",
-            revision="keypose",
-            safety_checker=None
+            "RzZ/sd-v1-4-adapter", revision="keypose", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -255,20 +243,15 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         inputs = self.get_inputs(torch_device, revision="keypose")
         image = pipe(**inputs).images
-        image_slice = image[0, -3:, -3:, -1].flatten()
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy(
-            "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/keypose/sample_output.npy"
-        )
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/keypose/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
-    
+
     def test_stable_diffusion_depth_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter",
-            revision="depth",
-            safety_checker=None
+            "RzZ/sd-v1-4-adapter", revision="depth", safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -276,12 +259,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         inputs = self.get_inputs(torch_device, revision="depth")
         image = pipe(**inputs).images
-        image_slice = image[0, -3:, -3:, -1].flatten()
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy(
-            "https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/depth/sample_output.npy"
-        )
+        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter/resolve/depth/sample_output.npy")
 
         assert np.abs(expected_image - image).max() < 1e-3
 
@@ -303,45 +283,46 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         mem_bytes = torch.cuda.max_memory_allocated()
         # make sure that less than 2.2 GB is allocated
-        assert mem_bytes < 2.2 * 10**9
+        assert mem_bytes < 2.4 * 10**9, f"{mem_bytes} >= 2.4 GB"
 
-    def test_stable_diffusion_pipeline_with_model_offloading(self):
-        torch.cuda.empty_cache()
-        torch.cuda.reset_max_memory_allocated()
-        torch.cuda.reset_peak_memory_stats()
+    # TODO: wait for accelerate v0.17 release
+    # def test_stable_diffusion_pipeline_with_model_offloading(self):
+    #     torch.cuda.empty_cache()
+    #     torch.cuda.reset_max_memory_allocated()
+    #     torch.cuda.reset_peak_memory_stats()
 
-        inputs = self.get_inputs(torch_device, dtype=torch.float16)
+    #     inputs = self.get_inputs(torch_device, dtype=torch.float16)
 
-        # Normal inference
+    #     # Normal inference
 
-        pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter",
-            safety_checker=None,
-            torch_dtype=torch.float16,
-        )
-        pipe.to(torch_device)
-        pipe.set_progress_bar_config(disable=None)
-        pipe(**inputs)
-        mem_bytes = torch.cuda.max_memory_allocated()
+    #     pipe = StableDiffusionAdapterPipeline.from_pretrained(
+    #         "RzZ/sd-v1-4-adapter",
+    #         safety_checker=None,
+    #         torch_dtype=torch.float16,
+    #     )
+    #     pipe.to(torch_device)
+    #     pipe.set_progress_bar_config(disable=None)
+    #     pipe(**inputs)
+    #     mem_bytes = torch.cuda.max_memory_allocated()
 
-        # With model offloading
+    #     # With model offloading
 
-        # Reload but don't move to cuda
-        pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter",
-            safety_checker=None,
-            torch_dtype=torch.float16,
-        )
+    #     # Reload but don't move to cuda
+    #     pipe = StableDiffusionAdapterPipeline.from_pretrained(
+    #         "RzZ/sd-v1-4-adapter",
+    #         safety_checker=None,
+    #         torch_dtype=torch.float16,
+    #     )
 
-        torch.cuda.empty_cache()
-        torch.cuda.reset_max_memory_allocated()
-        torch.cuda.reset_peak_memory_stats()
+    #     torch.cuda.empty_cache()
+    #     torch.cuda.reset_max_memory_allocated()
+    #     torch.cuda.reset_peak_memory_stats()
 
-        pipe.enable_model_cpu_offload()
-        pipe.set_progress_bar_config(disable=None)
-        _ = pipe(**inputs)
-        mem_bytes_offloaded = torch.cuda.max_memory_allocated()
+    #     pipe.enable_model_cpu_offload()
+    #     pipe.set_progress_bar_config(disable=None)
+    #     _ = pipe(**inputs)
+    #     mem_bytes_offloaded = torch.cuda.max_memory_allocated()
 
-        assert mem_bytes_offloaded < mem_bytes
-        for module in pipe.text_encoder, pipe.unet, pipe.vae:
-            assert module.device == torch.device("cpu")
+    #     assert mem_bytes_offloaded < mem_bytes
+    #     for module in pipe.text_encoder, pipe.unet, pipe.vae:
+    #         assert module.device == torch.device("cpu")

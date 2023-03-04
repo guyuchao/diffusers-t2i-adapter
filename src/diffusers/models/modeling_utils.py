@@ -910,26 +910,26 @@ def _get_model_file(
 
 class Sideloads(UserDict):
     """
-    A dataclass that wrap all adpater's output togather, 
-    it also keep track the mapping between each adpater state and targeted layer.
+    A dataclass that wrap all adpater's output togather, it also keep track the mapping between each adpater state and
+    targeted layer.
     """
 
     def __setitem__(self, name: str, state: Tensor):
         # TODO: check state dtype/device, maybe check the name follow nn.module naming convention
         super().__setitem__(name, state)
-    
+
     def to(self, torch_device: Union[str, torch.device]):
         for k, v in self.items():
             self[k] = v.to(torch_device)
-    
-    def clone(self) -> 'Sideloads':
+
+    def clone(self) -> "Sideloads":
         return Sideloads({k: ten.clone() for k, ten in self.items()})
 
 
 class SideloadMixin:
     """
-    A forward-pass hook that connect targeted layer/nn.module to sideload processor,
-    this mixin also keep the module name availible within the object.
+    A forward-pass hook that connect targeted layer/nn.module to sideload processor, this mixin also keep the module
+    name availible within the object.
     """
 
     def set_sideload_processor(self, module_name, processor):
@@ -939,7 +939,7 @@ class SideloadMixin:
 
     def __call__(self, *args, **kwargs):
         hidden_state = super().__call__(*args, **kwargs)
-        if hasattr(self, '_submodule_name') and hasattr(self, '_sideload_processor'):
+        if hasattr(self, "_submodule_name") and hasattr(self, "_sideload_processor"):
             return self._sideload_processor(self._submodule_name, hidden_state)
         else:
             return hidden_state

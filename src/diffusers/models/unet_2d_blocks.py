@@ -20,9 +20,9 @@ from torch import nn
 from .attention import AdaGroupNorm, AttentionBlock
 from .cross_attention import CrossAttention, CrossAttnAddedKVProcessor
 from .dual_transformer_2d import DualTransformer2DModel
+from .modeling_utils import SideloadMixin
 from .resnet import Downsample2D, FirDownsample2D, FirUpsample2D, KDownsample2D, KUpsample2D, ResnetBlock2D, Upsample2D
 from .transformer_2d import Transformer2DModel
-from .modeling_utils import SideloadMixin
 
 
 def get_down_block(
@@ -809,11 +809,11 @@ class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
         self.gradient_checkpointing = False
 
     def forward(
-        self, 
-        hidden_states, 
-        temb=None, 
-        encoder_hidden_states=None, 
-        attention_mask=None, 
+        self,
+        hidden_states,
+        temb=None,
+        encoder_hidden_states=None,
+        attention_mask=None,
         cross_attention_kwargs=None,
     ):
         # TODO(Patrick, William) - attention mask is not used

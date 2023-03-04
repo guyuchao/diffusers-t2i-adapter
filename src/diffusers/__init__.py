@@ -33,6 +33,8 @@ except OptionalDependencyNotAvailable:
     from .utils.dummy_pt_objects import *  # noqa F403
 else:
     from .models import (
+        Adapter,
+        MultiAdapter,
         AutoencoderKL,
         ControlNetModel,
         ModelMixin,
@@ -42,7 +44,6 @@ else:
         UNet2DConditionModel,
         UNet2DModel,
         VQModel,
-        Adapter,
     )
     from .optimization import (
         get_constant_schedule,

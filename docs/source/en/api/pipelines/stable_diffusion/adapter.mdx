@@ -37,16 +37,15 @@ Foundatly T2I-Adapter is try to achieve the same goal as ControlNet with simliar
 
 ## Usage example
 
-In the following we give a simple example of how to use a *ControlNet* checkpoint with Diffusers for inference.
+In the following we give a simple example of how to use a *Adapter* checkpoint with Diffusers for inference.
 The inference pipeline is the same for all pipelines:
 
-* 1. Take an image and run it through a pre-conditioning processor.
-* 2. Run the pre-processed image through the [`StableDiffusionAdapterPipeline`].
+* 1. Take an image and run it through a pre-conditioning processor to obtain *control image*.
+* 2. Run the pre-processed *control image* and *prompt* through the [`StableDiffusionAdapterPipeline`].
 
-Let's have a look at a simple example using the [Canny Edge ControlNet](https://huggingface.co/lllyasviel/sd-controlnet-canny).
+Let's have a look at a simple example using the [Canny Edge Adapter]().
 
 ```python
-from diffusers import StableDiffusionAdapterPipeline
 from diffusers.utils import load_image
 
 # Let's load the popular vermeer image
@@ -81,16 +80,29 @@ Let's take a look at the processed image.
 ![img](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/vermeer_canny_edged.png)
 
 
-```py
+After we having `canny_image` in hand, we can create the [`StableDiffusionAdapterPipeline`] with pretrained checkpoint.
 
+```py
+import torch
+from diffusers import StableDiffusionAdapterPipeline, Adapter
+
+adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
+pipe = StableDiffusionAdapterPipeline.from_pretrained(
+	'RzZ/sd-v1-4-adapter', adapter=adapter, torch_dtype=torch.float16,
+)
+pipe.to("cuda")
 ```
 
+And finally feed the data to the pipelien and wait for the result!
 
 ```py
+# fix the random seed, so you will get the same result as the example
 generator = torch.manual_seed(0)
 
 out_image = pipe(
-    "disco dancer with colorful lights", num_inference_steps=20, generator=generator, image=canny_image
+    "disco dancer with colorful lights", 
+	image=canny_image, 
+	generator=generator,
 ).images[0]
 ```
 
@@ -99,7 +111,7 @@ This should take only around 3-4 seconds on GPU (depending on hardware). The out
 ![img](https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/vermeer_disco_dancing.png)
 
 
-**Note**: To see how to run all other ControlNet checkpoints, please have a look at [ControlNet with Stable Diffusion 1.5](#controlnet-with-stable-diffusion-1.5)
+**Note**: To see how to run all other Adapter checkpoints, please have a look at [T2I-Adapter with Stable Diffusion 1.4](#t2i-adapter-with-stable-diffusion-1.4)
 
 <!-- TODO: add space -->
 
@@ -108,32 +120,57 @@ This should take only around 3-4 seconds on GPU (depending on hardware). The out
 Adapter requires a *control image* in addition to the text-to-image *prompt*. 
 Each pretrained model is trained using a different conditioning method that requires different images for conditioning the generated outputs. For example, Canny edge conditioning requires the control image to be the output of a Canny filter, while depth conditioning requires the control image to be a depth map. See the overview and image examples below to know more.
 
-All checkpoints can be found under the authors' namespace [lllyasviel](https://huggingface.co/lllyasviel).
+All official checkpoints can be found under the authors' namespace [TencentARC/T2I-Adapter](https://huggingface.co/TencentARC/T2I-Adapter/tree/main/models).
 
 ### T2I-Adapter with Stable Diffusion 1.4
 
 | Model Name | Control Image Overview| Control Image Example | Generated Image Example |
 |---|---|---|---|
+|[**/sd-v1.4-adapter-color]()<br/> *Trained with spatial color palette* | A image with 8x8 color palette.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_bird_canny.png"><img width="64" style="margin:0;padding:0;" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_bird_canny.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"/></a>|
 |[**/sd-v1.4-adapter-canny]()<br/> *Trained with canny edge detection* | A monochrome image with white edges on a black background.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_bird_canny.png"><img width="64" style="margin:0;padding:0;" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_bird_canny.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"/></a>|
-|[**/sd-v1.4-adapter-depth]()<br/> *Trained with Midas depth estimation*  |A grayscale image with black representing deep areas and white representing shallow areas.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_vermeer_depth.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_vermeer_depth.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_vermeer_depth_2.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_vermeer_depth_2.png"/></a>|
-|[**/sd-v1.4-adapter-openpose]()<br/> *Trained with OpenPose bone image*  |A [OpenPose bone](https://github.com/CMU-Perceptual-Computing-Lab/openpose) image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_human_openpose.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_human_openpose.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"/></a>|
-|[**/sd-v1.4-adapter-seg]()<br/>*Trained with semantic segmentation*  |An [ADE20K](https://groups.csail.mit.edu/vision/datasets/ADE20K/)'s segmentation protocol image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_room_seg.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_room_seg.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"/></a> |
+|[**/sd-v1.4-adapter-sketch]()<br/> *Trained with canny edge detection* | A hand-drawn monochrome image with white outlines on a black background.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_bird_canny.png"><img width="64" style="margin:0;padding:0;" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_bird_canny.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_bird_canny_1.png"/></a>|
+|[RzZ/sd-v1.4-adapter-depth](https://huggingface.co/RzZ/sd-v1-4-adapter-depth)<br/> *Trained with Midas depth estimation*  | A grayscale image with black representing deep areas and white representing shallow areas.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_output.png"/></a>|
+|[**/sd-v1.4-adapter-openpose]()<br/> *Trained with OpenPose bone image*  | A [OpenPose bone](https://github.com/CMU-Perceptual-Computing-Lab/openpose) image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_human_openpose.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_human_openpose.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"/></a>|
+|[RzZ/sd-v1.4-adapter-keypose](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose)<br/> *Trained with mmpose skeleton image*  | A [mmpose skeleton]() image.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"/></a>|
+|[**/sd-v1.4-adapter-seg]()<br/>*Trained with semantic segmentation*  | An [COCO]()'s segmentation protocol image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_room_seg.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_room_seg.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"/></a> |
 
 ## Mix and match multiple adapters
 
-```py
-cond_1 = Image.open("iron.png")
-cond_2 = Image.open("desk_depth_512.png")
-cond_1 = torch.from_numpy(np.array(cond_1))
-cond_2 = torch.from_numpy(np.array(cond_2))
+[`StableDiffusionAdapterPipeline`] also support using multiple type of *control image* at once with combination with [`MultiAdapter`].
+Here is a example of using keypose adapter for character posture control and depth adapter for outlining background.
 
-cond = torch.cat([cond_1, cond_2], dim=-1)
+Just like the previous example, we will first prepare the *control image* for inference. One big difference when using [`MultiAdapter`] is that the *control image* we will send to pipeline is 
+combined from multiple images. In this example we stack two 3 channels RGB image(`cond_keypose`, `cond_depth`) together to create a 6 channels image tensor(`cond`).
+
+```py
+import torch
+from PIL import Image
+from diffusers.utils import load_image
+
+cond_keypose = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_keypose.png")
+cond_depth = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_depth.png")
+cond_keypose = torch.from_numpy(np.array(cond_keypose))
+cond_depth = torch.from_numpy(np.array(cond_depth))
+
+# preprocess image tensor
+cond = torch.cat([cond_keypose, cond_depth], dim=-1)
 cond = cond.permute(2, 0, 1) / 255
 
-prompt = ['a man waling in an office room with nice view']
+prompt = ['A man waling in an office room with nice view']
 ```
 
+Two *control image* should look like follows:
+
+![img](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_keypose.png)
+![img](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_depth.png)
+
+
+Now we can using `from_adapters` method combine keypose and depth adapter into one, then pass our newly created [`MultiAdapter`] to 
+[`StableDiffusionAdapterPipeline`].
+
 ```py
+from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
+
 adapters = MultiAdapter.from_adapters(
 	[
 		Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
@@ -149,6 +186,9 @@ pipe = StableDiffusionAdapterPipeline.from_pretrained(
 images = pipe(prompt, [cond])
 ```
 
+After prompt and image is processed by pipeline we should get the result looks like:
+
+![img](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_output.png)
 
 ## StableDiffusionAdapterPipeline
 [[autodoc]] StableDiffusionAdapterPipeline

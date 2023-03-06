@@ -32,6 +32,7 @@ from diffusers.utils import floats_tensor, load_image, load_numpy, slow, torch_d
 from diffusers.utils.import_utils import is_xformers_available
 from diffusers.utils.testing_utils import require_torch_gpu
 
+from ...pipeline_params import TEXT_GUIDED_IMAGE_VARIATION_PARAMS, TEXT_GUIDED_IMAGE_VARIATION_BATCH_PARAMS
 from ...test_pipelines_common import PipelineTesterMixin
 
 
@@ -40,6 +41,8 @@ torch.backends.cuda.matmul.allow_tf32 = False
 
 class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.TestCase):
     pipeline_class = StableDiffusionAdapterPipeline
+    params = TEXT_GUIDED_IMAGE_VARIATION_PARAMS
+    batch_params = TEXT_GUIDED_IMAGE_VARIATION_BATCH_PARAMS
 
     def get_dummy_components(self):
         torch.manual_seed(0)
@@ -114,7 +117,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
             generator = torch.Generator(device=device).manual_seed(seed)
         inputs = {
             "prompt": "A painting of a squirrel eating a burger",
-            "adapter_input": image,
+            "image": image,
             "generator": generator,
             "num_inference_steps": 2,
             "guidance_scale": 6.0,
@@ -128,7 +131,6 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         sd_pipe = StableDiffusionAdapterPipeline(**components)
         sd_pipe = sd_pipe.to(device)
         sd_pipe.set_progress_bar_config(disable=None)
-        # breakpoint()
 
         inputs = self.get_dummy_inputs(device)
         image = sd_pipe(**inputs).images
@@ -136,7 +138,6 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
 
         assert image.shape == (1, 64, 64, 3)
         expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
-
         assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3
 
     def test_stable_diffusion_adapter_multiple_adapter_inputs(self):
@@ -148,7 +149,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
 
         inputs = self.get_dummy_inputs(device)
         inputs["prompt"] = [inputs["prompt"]] * 2
-        inputs["adapter_input"] = inputs["adapter_input"].repeat(2, 1, 1, 1)
+        inputs["image"] = inputs["image"].repeat(2, 1, 1, 1)
         image = sd_pipe(**inputs).images
         image_slice = image[0, -3:, -3:, -1]
 
@@ -209,7 +210,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         cond_image = load_image(image_urls[revision])
         inputs = {
             "prompt": prompt_by_rev[revision],
-            "adapter_input": cond_image,
+            "image": cond_image,
             "generator": generator,
             "num_inference_steps": 3,
             "guidance_scale": 7.5,

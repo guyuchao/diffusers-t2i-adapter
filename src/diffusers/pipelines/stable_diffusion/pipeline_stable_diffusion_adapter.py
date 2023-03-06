@@ -185,7 +185,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
     def __call__(
         self,
         prompt: Union[str, List[str]] = None,
-        adapter_input: Union[torch.Tensor, PIL_Image.Image, List[PIL_Image.Image]] = None,
+        image: Union[torch.Tensor, PIL_Image.Image, List[PIL_Image.Image]] = None,
         height: Optional[int] = None,
         width: Optional[int] = None,
         num_inference_steps: int = 50,
@@ -282,7 +282,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
             prompt, height, width, callback_steps, negative_prompt, prompt_embeds, negative_prompt_embeds
         )
 
-        adapter_input = preprocess(adapter_input).to(device)
+        adapter_input = preprocess(image).to(device)
         adapter_input = adapter_input.to(self.adapter.dtype)
 
         # 2. Define call parameters

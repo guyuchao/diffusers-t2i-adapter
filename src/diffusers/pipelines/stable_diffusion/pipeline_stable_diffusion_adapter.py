@@ -39,13 +39,15 @@ EXAMPLE_DOC_STRING = """
     Examples:
         ```py
         >>> import torch
-        >>> from diffusers import StableDiffusionPipeline
+        >>> from diffusers import StableDiffusionPipeline, Adapter
 
-        >>> pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", torch_dtype=torch.float16)
+        >>> adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose")
+        >>> pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", adapter=adapter, torch_dtype=torch.float16)
         >>> pipe = pipe.to("cuda")
 
         >>> prompt = "a photo of an astronaut riding a horse on mars"
-        >>> image = pipe(prompt).images[0]
+        >>> control_image = Image.load("path_to_keypose_image.png")
+        >>> image = pipe(prompt, control_image).images[0]
         ```
 """
 
@@ -210,6 +212,10 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
             prompt (`str` or `List[str]`, *optional*):
                 The prompt or prompts to guide the image generation. If not defined, one has to pass `prompt_embeds`.
                 instead.
+            image (`torch.FloatTensor`, `PIL.Image.Image`, `List[torch.FloatTensor]` or `List[PIL.Image.Image]`):
+                The Adapter input condition. Adapter uses this input condition to generate guidance to Unet. If
+                the type is specified as `Torch.FloatTensor`, it is passed to Adapter as is. PIL.Image.Image` can
+                also be accepted as an image. The control image is automatically resized to fit the output image.
             height (`int`, *optional*, defaults to self.unet.config.sample_size * self.vae_scale_factor):
                 The height in pixels of the generated image.
             width (`int`, *optional*, defaults to self.unet.config.sample_size * self.vae_scale_factor):
@@ -331,6 +337,9 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
 
         # 7. Denoising loop
         adapter_state = self.adapter(adapter_input)
+        if num_images_per_prompt > 1:
+            for k, v in adapter_state.items():
+                adapter_state[k] = v.repeat(num_images_per_prompt, 1, 1, 1)
         if do_classifier_free_guidance:
             for k, v in adapter_state.items():
                 adapter_state[k] = torch.cat([v] * 2, dim=0)

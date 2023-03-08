@@ -23,9 +23,9 @@ from ...models import Adapter, AutoencoderKL, UNet2DConditionModel
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import (
     PIL_INTERPOLATION,
-    logging,
     is_accelerate_available,
     is_accelerate_version,
+    logging,
     replace_example_docstring,
 )
 from . import StableDiffusionPipelineOutput
@@ -38,16 +38,31 @@ logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 EXAMPLE_DOC_STRING = """
     Examples:
         ```py
+        >>> from PIL import Image
+        >>> from diffusers.utils import load_image
+
+        >>> image = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-color/resolve/main/color_ref.png")
+
+        >>> color_palette = image.resize((8, 8))
+        >>> color_palette = color_palette.resize((512, 512), resample=Image.Resampling.NEAREST)
+
         >>> import torch
-        >>> from diffusers import StableDiffusionPipeline, Adapter
+        >>> from diffusers import StableDiffusionAdapterPipeline, Adapter
 
-        >>> adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose")
-        >>> pipe = StableDiffusionPipeline.from_pretrained("runwayml/stable-diffusion-v1-5", adapter=adapter, torch_dtype=torch.float16)
-        >>> pipe = pipe.to("cuda")
+        >>> adapter = (Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color"),)
+        >>> pipe = StableDiffusionAdapterPipeline.from_pretrained(
+        ...     "RzZ/sd-v1-4-adapter",
+        ...     adapter=adapter,
+        ...     torch_dtype=torch.float16,
+        ... )
 
-        >>> prompt = "a photo of an astronaut riding a horse on mars"
-        >>> control_image = Image.load("path_to_keypose_image.png")
-        >>> image = pipe(prompt, control_image).images[0]
+        >>> pipe.to("cuda")
+
+        >>> out_image = pipe(
+        ...     "At night, glowing cubes in front of the beach",
+        ...     image=color_palette,
+        ...     generator=generator,
+        ... ).images[0]
         ```
 """
 
@@ -128,7 +143,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         # TODO: make sure from_pretrain/save_pretrain still work
         self.register_modules(adapter=adapter)
         # self.adapter = adapter
-    
+
     def enable_sequential_cpu_offload(self, gpu_id=0):
         r"""
         Offloads all models to CPU using accelerate, significantly reducing memory usage. When called, unet,
@@ -213,9 +228,9 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
                 The prompt or prompts to guide the image generation. If not defined, one has to pass `prompt_embeds`.
                 instead.
             image (`torch.FloatTensor`, `PIL.Image.Image`, `List[torch.FloatTensor]` or `List[PIL.Image.Image]`):
-                The Adapter input condition. Adapter uses this input condition to generate guidance to Unet. If
-                the type is specified as `Torch.FloatTensor`, it is passed to Adapter as is. PIL.Image.Image` can
-                also be accepted as an image. The control image is automatically resized to fit the output image.
+                The Adapter input condition. Adapter uses this input condition to generate guidance to Unet. If the
+                type is specified as `Torch.FloatTensor`, it is passed to Adapter as is. PIL.Image.Image` can also be
+                accepted as an image. The control image is automatically resized to fit the output image.
             height (`int`, *optional*, defaults to self.unet.config.sample_size * self.vae_scale_factor):
                 The height in pixels of the generated image.
             width (`int`, *optional*, defaults to self.unet.config.sample_size * self.vae_scale_factor):

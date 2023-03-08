@@ -32,7 +32,7 @@ from diffusers.utils import floats_tensor, load_image, load_numpy, slow, torch_d
 from diffusers.utils.import_utils import is_xformers_available
 from diffusers.utils.testing_utils import require_torch_gpu
 
-from ...pipeline_params import TEXT_GUIDED_IMAGE_VARIATION_PARAMS, TEXT_GUIDED_IMAGE_VARIATION_BATCH_PARAMS
+from ...pipeline_params import TEXT_GUIDED_IMAGE_VARIATION_BATCH_PARAMS, TEXT_GUIDED_IMAGE_VARIATION_PARAMS
 from ...test_pipelines_common import PipelineTesterMixin
 
 
@@ -228,9 +228,11 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         inputs = self.get_inputs(torch_device, revision="segmentation")
         image = pipe(**inputs).images
-        
+
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/segmentation/sample_output.npy")
+        expected_image = load_numpy(
+            "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/segmentation/sample_output.npy"
+        )
 
         assert np.abs(expected_image - image).max() < 1e-3
 
@@ -246,7 +248,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         image = pipe(**inputs).images
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/keypose/sample_output.npy")
+        expected_image = load_numpy(
+            "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/keypose/sample_output.npy"
+        )
 
         assert np.abs(expected_image - image).max() < 1e-3
 
@@ -262,7 +266,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         image = pipe(**inputs).images
 
         assert image.shape == (1, 512, 512, 3)
-        expected_image = load_numpy("https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/depth/sample_output.npy")
+        expected_image = load_numpy(
+            "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/depth/sample_output.npy"
+        )
 
         assert np.abs(expected_image - image).max() < 1e-3
 

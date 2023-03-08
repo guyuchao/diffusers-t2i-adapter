@@ -41,9 +41,7 @@ Let's have a look at a simple example using the [Color Adapter](https://huggingf
 ```python
 from diffusers.utils import load_image
 
-image = load_image(
-    "https://huggingface.co/RzZ/sd-v1-4-adapter-color/resolve/main/color_ref.png"
-)
+image = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-color/resolve/main/color_ref.png")
 ```
 
 ![img](https://huggingface.co/RzZ/sd-v1-4-adapter-color/resolve/main/color_ref.png)
@@ -69,9 +67,11 @@ After we having `color_palette` in hand, we can create the [`StableDiffusionAdap
 import torch
 from diffusers import StableDiffusionAdapterPipeline, Adapter
 
-adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color"),
+adapter = (Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color"),)
 pipe = StableDiffusionAdapterPipeline.from_pretrained(
-	'RzZ/sd-v1-4-adapter', adapter=adapter, torch_dtype=torch.float16,
+    "RzZ/sd-v1-4-adapter",
+    adapter=adapter,
+    torch_dtype=torch.float16,
 )
 pipe.to("cuda")
 ```
@@ -83,9 +83,9 @@ And finally we feed the data to the pipelien and wait for the result!
 generator = torch.manual_seed(7)
 
 out_image = pipe(
-    "disco dancer with colorful lights", 
-	image=canny_image, 
-	generator=generator,
+    "At night, glowing cubes in front of the beach",
+    image=color_palette,
+    generator=generator,
 ).images[0]
 ```
 
@@ -130,7 +130,9 @@ import torch
 from PIL import Image
 from diffusers.utils import load_image
 
-cond_keypose = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_input_keypose.png")
+cond_keypose = load_image(
+    "https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_input_keypose.png"
+)
 cond_depth = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_input_depth.png")
 cond_keypose = torch.from_numpy(np.array(cond_keypose))
 cond_depth = torch.from_numpy(np.array(cond_depth))
@@ -143,7 +145,7 @@ cond_depth = cond_depth[..., :3]
 cond = torch.cat([cond_keypose, cond_depth], dim=-1)
 cond = cond.permute(2, 0, 1) / 255
 
-prompt = ['A man waling in an office room with nice view']
+prompt = ["A man waling in an office room with nice view"]
 ```
 
 Two *control image* should look like follows:
@@ -159,16 +161,18 @@ Now we can using `from_adapters` method combine keypose and depth adapter into o
 from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
 
 adapters = MultiAdapter.from_adapters(
-	[
-		Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
-		Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
-	],
-	adapter_weights=[0.8, 0.8],
+    [
+        Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
+        Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
+    ],
+    adapter_weights=[0.8, 0.8],
 )
 adapters = adapters.to(torch.float16)
 
 pipe = StableDiffusionAdapterPipeline.from_pretrained(
-	"RzZ/sd-v1-4-adapter-pipeline", torch_dtype=torch.float16, adapter=adapters,
+    "RzZ/sd-v1-4-adapter-pipeline",
+    torch_dtype=torch.float16,
+    adapter=adapters,
 )
 
 images = pipe(prompt, [cond])

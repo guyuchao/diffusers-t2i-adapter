@@ -34,10 +34,10 @@ except OptionalDependencyNotAvailable:
 else:
     from .models import (
         Adapter,
-        MultiAdapter,
         AutoencoderKL,
         ControlNetModel,
         ModelMixin,
+        MultiAdapter,
         PriorTransformer,
         Transformer2DModel,
         UNet1DModel,

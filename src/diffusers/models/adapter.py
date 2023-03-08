@@ -1,4 +1,4 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 import torch
 import torch.nn as nn
@@ -13,21 +13,21 @@ class ResnetBlock(nn.Module):
         super().__init__()
         ps = ksize // 2
         proj_pad = proj_ksize // 2
-        
+
         if in_c != mid_c or sk is False:
             self.in_conv = nn.Conv2d(in_c, mid_c, proj_ksize, 1, proj_pad)
         else:
             self.in_conv = None
-        
+
         if out_c != mid_c:
             self.out_conv = nn.Conv2d(mid_c, out_c, proj_ksize, 1, proj_pad)
         else:
             self.out_conv = None
-        
+
         self.block1 = nn.Conv2d(mid_c, mid_c, 3, 1, 1)
         self.act = nn.ReLU()
         self.block2 = nn.Conv2d(mid_c, mid_c, ksize, 1, ps)
-        
+
         if sk is False:
             self.skep = nn.Conv2d(in_c, mid_c, ksize, 1, ps)
         else:
@@ -50,7 +50,7 @@ class ResnetBlock(nn.Module):
             h = h + self.skep(x)
         else:
             h = h + x
-        
+
         if self.out_conv is not None:
             h = self.out_conv(h)
         return h
@@ -58,15 +58,16 @@ class ResnetBlock(nn.Module):
 
 class Adapter(ModelMixin, ConfigMixin):
     r"""
-    A simple resnet-like model that accept images contain control singal like keypose, depth...etc and 
-    generate multiple feature maps to be inject into `UNet2DConditionModel` by `SideloadProcessor`.
-    Model architecture is following the original implementation of 
-    [Adapter](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97) 
-    and [AdapterLight](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L235)
+    A simple resnet-like model that accept images contain control singal like keypose, depth...etc and generate
+    multiple feature maps to be inject into `UNet2DConditionModel` by `SideloadProcessor`. Model architecture is
+    following the original implementation of
+    [Adapter](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97)
+    and
+    [AdapterLight](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L235)
 
     This model inherits from [`ModelMixin`]. Check the superclass documentation for the generic methods the library
-    implements for all the model (such as downloading or saving, etc.) 
-    
+    implements for all the model (such as downloading or saving, etc.)
+
     Parameters:
         block_out_channels (`List[int]`, *optional*, defaults to `(320, 640, 1280, 1280)`):
             The number of channel of each downsample block's final output.
@@ -82,17 +83,18 @@ class Adapter(ModelMixin, ConfigMixin):
         proj_kerenl_size (`int`, *optional*, defaults to 3):
             Kernel size of conv-2d projection layers.
         res_block_skip (`bool`, *optional*, defaults to True):
-            If set to `True`, resnet block will using a regular residual connect that add layer input to its output.
-            If set to `False`, resnet block will create a additional conv-2d layer in residual connect before adding residual back.
+            If set to `True`, resnet block will using a regular residual connect that add layer input to its output. If
+            set to `False`, resnet block will create a additional conv-2d layer in residual connect before adding
+            residual back.
         use_conv (`bool`, *optional*, defaults to False):
             Whether to use a conv-2d layer for down sample feature map or a average pooling layer.
         target_layers (`List[int]`, *optional*, defaults to `Adapter.DEFAULT_TARGET`):
             The names of layers from `UNet2DConditionModel` that adapter's outputs will be fusing to.
         input_scale_factor (`int`, *optional*, defaults to 8):
-            The down scaling factor will be apply to input image when it is frist deliver to Adapter.
-            Which should be equal to the down scaling factor of the VAE of your choice.
+            The down scaling factor will be apply to input image when it is frist deliver to Adapter. Which should be
+            equal to the down scaling factor of the VAE of your choice.
     """
-    
+
     DEFAULT_TARGET = [
         "down_blocks.0.attentions.1",
         "down_blocks.1.attentions.1",
@@ -121,7 +123,7 @@ class Adapter(ModelMixin, ConfigMixin):
         self.target_layers = target_layers
         self.num_res_blocks = num_res_blocks
         self.body = []
-        
+
         if block_mid_channels is None:
             block_mid_channels = block_out_channels
 
@@ -173,7 +175,13 @@ class Adapter(ModelMixin, ConfigMixin):
             self.conv_in = nn.Conv2d(channels_in * input_scale_factor**2, block_mid_channels[0], 3, 1, 1)
         else:
             # if block_mid_channels[i] < block_out_channels[i](bottleneck downsample block), using light weight adapter schema instead
-            self.conv_in = nn.Conv2d(channels_in * input_scale_factor**2, block_mid_channels[0], proj_kerenl_size, 1, proj_kerenl_size // 2)
+            self.conv_in = nn.Conv2d(
+                channels_in * input_scale_factor**2,
+                block_mid_channels[0],
+                proj_kerenl_size,
+                1,
+                proj_kerenl_size // 2,
+            )
 
     def forward(self, x: torch.Tensor) -> Sideloads:
         # unshuffle
@@ -192,23 +200,25 @@ class Adapter(ModelMixin, ConfigMixin):
 
 class MultiAdapter(ModelMixin, ConfigMixin):
     r"""
-    MultiAdapter is a wrapper model to contains multiple adapter model and merge the their outputs 
-    according to user assigned weighting.
+    MultiAdapter is a wrapper model to contains multiple adapter model and merge the their outputs according to user
+    assigned weighting.
 
     This model inherits from [`ModelMixin`]. Check the superclass documentation for the generic methods the library
-    implements for all the model (such as downloading or saving, etc.) 
-    
+    implements for all the model (such as downloading or saving, etc.)
+
     Parameters:
         num_adapter (`int`): Number of `Adapter` this model will create.
         adapters_kwargs (`List[dict]`, defaults to `MultiAdapter.default_adapter_kwargs`):
             List of keyword arguments for `Adapter` constructor. `len(adapters_kwargs)` should equal to `num_adapter`.
         adapters (`List[Adapter]`, *optional*, defaults to None):
-            List of `Adapter` instances, `MultiAdapter` use `adapters` if this parameter is provided instead of creating new one.
+            List of `Adapter` instances, `MultiAdapter` use `adapters` if this parameter is provided instead of
+            creating new one.
         adapter_weights (`List[float]`, *optional*, defaults to None):
-            List of floats representing the weight which will be multiply to each adapter's output before adding them together.
+            List of floats representing the weight which will be multiply to each adapter's output before adding them
+            together.
     """
 
-    ignore_for_config = ['adapters']
+    ignore_for_config = ["adapters"]
     default_adapter_kwargs = {
         "block_out_channels": [320, 640, 1280, 1280],
         "num_res_blocks": 3,
@@ -232,12 +242,7 @@ class MultiAdapter(ModelMixin, ConfigMixin):
 
         self.num_adapter = num_adapter
         if adapters is None:
-            self.adapters = nn.ModuleList(
-                [
-                    Adapter(**kwargs)
-                    for kwargs in adapters_kwargs
-                ]
-            )
+            self.adapters = nn.ModuleList([Adapter(**kwargs) for kwargs in adapters_kwargs])
         else:
             self._check_adapter_config(adapters_kwargs, adapters)
             self.adapters = nn.ModuleList(adapters)
@@ -245,7 +250,7 @@ class MultiAdapter(ModelMixin, ConfigMixin):
             self.adapter_weights = nn.Parameter(torch.tensor([1 / num_adapter] * num_adapter))
         else:
             self.adapter_weights = nn.Parameter(torch.tensor(adapter_weights))
-    
+
     def _check_adapter_config(self, adapters_kwargs: List[Dict[str, Any]], adapters: List[Adapter]):
         for i, (init_kwargs, adapter) in enumerate(zip(adapters_kwargs, adapters)):
             config = adapter.config
@@ -255,25 +260,23 @@ class MultiAdapter(ModelMixin, ConfigMixin):
                         f"keyword argument \"{k}\" from adapters_kwargs of {i}'th adapter dont match the Adapter instance's config!"
                         f"  {v} != {config[k]}"
                     )
-    
+
     @classmethod
-    def from_adapters(cls, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None) -> 'MultiAdapter':
+    def from_adapters(cls, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None) -> "MultiAdapter":
         r"""
         Create a MultiAdapter model with existing Adapter instances
-        
+
         Args:
             adapters (`List[Adapter]`):
                 List of `Adapter` instances `MultiAdapter` will use.
             adapter_weights (`List[float]`, *optional*, defaults to None):
-                List of floats representing the weight which will be multiply to each adapter's output before adding them together.
+                List of floats representing the weight which will be multiply to each adapter's output before adding
+                them together.
         """
-        
+
         def get_public_kwargs(kwargs):
-            return {
-                k: v for k, v in kwargs.items()
-                if not k.startswith('_')
-            }
-        
+            return {k: v for k, v in kwargs.items() if not k.startswith("_")}
+
         adapters_kwargs = [get_public_kwargs(adapter.config) for adapter in adapters]
         multi_adapter = cls(
             num_adapter=len(adapters),
@@ -286,8 +289,8 @@ class MultiAdapter(ModelMixin, ConfigMixin):
     def forward(self, xs: torch.Tensor) -> Sideloads:
         r"""
         Args:
-            xs (`torch.Tensor`): 
-                (batch, channel, height, width) input images for multiple adapter models concated along dimension 1, 
+            xs (`torch.Tensor`):
+                (batch, channel, height, width) input images for multiple adapter models concated along dimension 1,
                 `channel` should equal to `num_adapter` * "number of channel of image".
         """
         if xs.shape[1] % self.num_adapter != 0:

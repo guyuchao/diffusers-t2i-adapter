@@ -482,9 +482,8 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         reversed_slice_size = list(reversed(slice_size))
         for module in self.children():
             fn_recursive_set_attention_slice(module, reversed_slice_size)
-    
-    def set_sideload_processor(self, processor: SideloadProcessor):
 
+    def set_sideload_processor(self, processor: SideloadProcessor):
         def fn_recursive_sideload_processor(name: str, module: torch.nn.Module, processor):
             if hasattr(module, "set_sideload_processor"):
                 module.set_sideload_processor(name, processor)
@@ -597,7 +596,6 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         down_block_res_samples = (sample,)
         for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "has_cross_attention") and downsample_block.has_cross_attention:
-                
                 sample, res_samples = downsample_block(
                     hidden_states=sample,
                     temb=emb,
@@ -607,7 +605,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
                 )
             else:
                 sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
-            
+
             down_block_res_samples += res_samples
 
         if down_block_additional_residuals is not None:

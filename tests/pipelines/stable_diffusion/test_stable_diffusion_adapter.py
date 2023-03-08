@@ -89,7 +89,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
                 "down_blocks.0.attentions.1",
                 "down_blocks.1.resnets.1",
             ],
-            channels_in=(3 * vae_scale_factor**2),
+            channels_in=3,
             num_res_blocks=2,
             kerenl_size=1,
             res_block_skip=True,
@@ -327,3 +327,13 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
     #     assert mem_bytes_offloaded < mem_bytes
     #     for module in pipe.text_encoder, pipe.unet, pipe.vae:
     #         assert module.device == torch.device("cpu")
+
+
+if __name__ == "__main__":
+    fast_test = StableDiffusionAdapterPipelineFastTests()
+    # fast_test.test_stable_diffusion_adapter_default_case()
+    # fast_test.test_stable_diffusion_adapter_multiple_adapter_inputs()
+    # fast_test.test_inference_batch_single_identical()
+
+    # slow_test = StableDiffusionAdapterPipelineSlowTests()
+    # slow_test.test_stable_diffusion_keypose_adapter()

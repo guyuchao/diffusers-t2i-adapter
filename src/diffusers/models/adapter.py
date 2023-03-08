@@ -61,7 +61,7 @@ class Adapter(ModelMixin, ConfigMixin):
     A simple resnet-like model that accept images contain control singal like keypose, depth...etc and 
     generate multiple feature maps to be inject into `UNet2DConditionModel` by `SideloadProcessor`.
     Model architecture is following the original implementation of 
-    [Adapter]https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97() 
+    [Adapter](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97) 
     and [AdapterLight](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L235)
 
     This model inherits from [`ModelMixin`]. Check the superclass documentation for the generic methods the library
@@ -106,7 +106,7 @@ class Adapter(ModelMixin, ConfigMixin):
         block_out_channels: List[int] = [320, 640, 1280, 1280],
         block_mid_channels: Optional[List[int]] = None,
         num_res_blocks: int = 3,
-        channels_in: int = 64,
+        channels_in: int = 3,
         kerenl_size: int = 3,
         proj_kerenl_size: int = 1,
         res_block_skip: bool = True,
@@ -170,10 +170,10 @@ class Adapter(ModelMixin, ConfigMixin):
 
         if block_mid_channels[0] == block_out_channels[0]:
             # follow standar adapter schema, using fix kernel size 3 for stem conv layer
-            self.conv_in = nn.Conv2d(channels_in, block_mid_channels[0], 3, 1, 1)
+            self.conv_in = nn.Conv2d(channels_in * input_scale_factor**2, block_mid_channels[0], 3, 1, 1)
         else:
             # if block_mid_channels[i] < block_out_channels[i](bottleneck downsample block), using light weight adapter schema instead
-            self.conv_in = nn.Conv2d(channels_in, block_mid_channels[0], proj_kerenl_size, 1, proj_kerenl_size // 2)
+            self.conv_in = nn.Conv2d(channels_in * input_scale_factor**2, block_mid_channels[0], proj_kerenl_size, 1, proj_kerenl_size // 2)
 
     def forward(self, x: torch.Tensor) -> Sideloads:
         # unshuffle
@@ -212,7 +212,7 @@ class MultiAdapter(ModelMixin, ConfigMixin):
     default_adapter_kwargs = {
         "block_out_channels": [320, 640, 1280, 1280],
         "num_res_blocks": 3,
-        "channels_in": 64,
+        "channels_in": 3,
         "kerenl_size": 3,
         "res_block_skip": False,
         "use_conv": False,

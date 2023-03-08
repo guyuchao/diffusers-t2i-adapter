@@ -167,7 +167,7 @@
         title: MultiDiffusion Panorama
       - local: api/pipelines/stable_diffusion/controlnet
         title: Text-to-Image Generation with ControlNet Conditioning
-      - local: api/pipelines/stable_diffusion/controlnet
+      - local: api/pipelines/stable_diffusion/adapter
         title: Text-to-Image Generation with T2I Adapter Conditioning
       title: Stable Diffusion
     - local: api/pipelines/stable_diffusion_2

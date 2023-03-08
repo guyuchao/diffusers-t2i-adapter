@@ -36,6 +36,7 @@ Unless otherwise mentioned, these are techniques that work with existing models 
 8. [DreamBooth](#dreambooth)
 9. [Textual Inversion](#textual-inversion)
 10. [ControlNet](#controlnet)
+10. [Adapter](#adapter)
 
 ## Instruct Pix2Pix
 
@@ -153,6 +154,16 @@ See [here](../training/text_inversion) for more information on how to use it.
 [Paper](https://arxiv.org/abs/2302.05543)
 
 [ControlNet](../api/pipelines/stable_diffusion/controlnet) is an auxiliary network which adds an extra condition.
+There are 8 canonical pre-trained ControlNets trained on different conditionings such as edge detection, scribbles, 
+depth maps, and semantic segmentations.
+
+See [here](../api/pipelines/stable_diffusion/controlnet) for more information on how to use it.
+
+## Adapter
+
+[Paper](https://arxiv.org/abs/2302.08453)
+
+[Adapter](../api/pipelines/stable_diffusion/adapter) is an auxiliary network which adds an extra condition.
 There are 8 canonical pre-trained ControlNets trained on different conditionings such as edge detection, scribbles, 
 depth maps, and semantic segmentations.
 

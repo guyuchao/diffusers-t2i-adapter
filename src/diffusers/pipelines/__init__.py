@@ -94,6 +94,7 @@ else:
         OnnxStableDiffusionInpaintPipeline,
         OnnxStableDiffusionInpaintPipelineLegacy,
         OnnxStableDiffusionPipeline,
+        OnnxStableDiffusionUpscalePipeline,
         StableDiffusionOnnxPipeline,
     )
 

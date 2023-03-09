@@ -915,7 +915,6 @@ class Sideloads(UserDict):
     """
 
     def __setitem__(self, name: str, state: Tensor):
-        # TODO: check state dtype/device, maybe check the name follow nn.module naming convention
         super().__setitem__(name, state)
 
     def to(self, torch_device: Union[str, torch.device]):
@@ -935,7 +934,6 @@ class SideloadMixin:
     def set_sideload_processor(self, module_name, processor):
         self._sideload_processor = processor
         self._submodule_name = module_name
-        # print('register SideloadMixin: ', module_name)
 
     def __call__(self, *args, **kwargs):
         hidden_state = super().__call__(*args, **kwargs)

@@ -68,23 +68,3 @@ class SideloadProcessor:
         else:
             return module_output
 
-
-class LinearProjectSideloadProcessor(SideloadProcessor, nn.Module):
-    """
-    A example usage of SideloadProcessor that is LoRA like, It also inheritance the nn.Moudle so that self.proj is
-    visible to the "root/main nn.module" hold this processor.
-    """
-
-    def __init__(self, hidden_state_channel: int):
-        super().__init__()
-        self.proj = nn.Linear(hidden_state_channel * 2, hidden_state_channel)
-
-    def merge_states(self, module_state: ModelOutputs, sideload_state: Tensor) -> ModelOutputs:
-        if isinstance(module_state, Tensor):
-            return self.proj(torch.cat([module_state, sideload_state], dim=1))
-        elif isinstance(module_state, Transformer2DModelOutput):
-            module_state = module_state.sample
-            sample = self.proj(torch.cat([module_state, sideload_state], dim=1))
-            return Transformer2DModelOutput(sample=sample)
-        else:
-            raise ValueError(f"SideloadProcessor got a unsupported data type: {type(module_state)}")

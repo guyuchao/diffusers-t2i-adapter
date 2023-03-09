@@ -1,7 +1,6 @@
 from typing import Tuple, Union
 
-import torch
-from torch import Tensor, nn
+from torch import Tensor
 
 from ..utils import logging
 from .modeling_utils import Sideloads
@@ -67,4 +66,3 @@ class SideloadProcessor:
             return new_output
         else:
             return module_output
-

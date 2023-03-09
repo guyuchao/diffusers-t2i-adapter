@@ -58,33 +58,35 @@ class ResnetBlock(nn.Module):
 
 class Adapter(ModelMixin, ConfigMixin):
     r"""
-    A simple resnet-like model that accept images contain control singal like keypose, depth...etc and generate
-    multiple feature maps to be inject into `UNet2DConditionModel` by `SideloadProcessor`. Model architecture is
-    following the original implementation of
+    A simple ResNet-like model that accepts images containing control signals such as keyposes, depth, and others, and
+    generates multiple feature maps that can be injected into `UNet2DConditionModel` by `SideloadProcessor`. The
+    model's architecture follows the original implementation of
     [Adapter](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97)
-    and
-    [AdapterLight](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L235)
+     and
+     [AdapterLight](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L235).
 
     This model inherits from [`ModelMixin`]. Check the superclass documentation for the generic methods the library
     implements for all the model (such as downloading or saving, etc.)
 
     Parameters:
         block_out_channels (`List[int]`, *optional*, defaults to `(320, 640, 1280, 1280)`):
-            The number of channel of each downsample block's final output.
+            The number of channel of each downsample block's output hidden state. The `len(block_out_channels)` will
+            also determine the number of downsample blocks in the Adapter.
         block_mid_channels (`List[int]`, *optional*, defaults to `block_out_channels` if not provided):
-            The number of channels resnet blocks in each downsample blocks will have, a downsample block will insert a
-             projection layer in the last resnet block when having different "mid_channel" and "out_channel".
+            The number of channels ResNet blocks in each downsample blocks will have, a downsample block will insert a
+             projection layer in the last ResNet block when having different "mid_channel" and "out_channel".
         num_res_blocks (`int`, *optional*, defaults to 3):
-            Number of resnet blocks in each downsample block
-        channels_in (`int`, *optional*, defaults to 64):
-            Number of channels of Aapter model input.
+            Number of ResNet blocks in each downsample block
+        channels_in (`int`, *optional*, defaults to 3):
+            Number of channels of Aapter's input(*control image*). Set this parameter to 1 if you're using gray scale
+            image as *control image*.
         kerenl_size (`int`, *optional*, defaults to 3):
-            Kernel size of conv-2d layers inside resnet blocks.
+            Kernel size of conv-2d layers inside ResNet blocks.
         proj_kerenl_size (`int`, *optional*, defaults to 3):
-            Kernel size of conv-2d projection layers.
+            Kernel size of conv-2d projection layers located at the start and end of a downsample block.
         res_block_skip (`bool`, *optional*, defaults to True):
-            If set to `True`, resnet block will using a regular residual connect that add layer input to its output. If
-            set to `False`, resnet block will create a additional conv-2d layer in residual connect before adding
+            If set to `True`, ResNet block will using a regular residual connect that add layer's input to its output.
+            If set to `False`, ResNet block will create a additional conv-2d layer in residual connect before adding
             residual back.
         use_conv (`bool`, *optional*, defaults to False):
             Whether to use a conv-2d layer for down sample feature map or a average pooling layer.
@@ -184,6 +186,12 @@ class Adapter(ModelMixin, ConfigMixin):
             )
 
     def forward(self, x: torch.Tensor) -> Sideloads:
+        r"""
+        Args:
+            x (`torch.Tensor`):
+                (batch, channel, height, width) input images for adapter model, `channel` should equal to
+                `channels_in`.
+        """
         # unshuffle
         x = self.unshuffle(x)
         # extract features
@@ -200,19 +208,20 @@ class Adapter(ModelMixin, ConfigMixin):
 
 class MultiAdapter(ModelMixin, ConfigMixin):
     r"""
-    MultiAdapter is a wrapper model to contains multiple adapter model and merge the their outputs according to user
-    assigned weighting.
+    MultiAdapter is a wrapper model that contains multiple adapter models and merges their outputs according to
+    user-assigned weighting.
 
     This model inherits from [`ModelMixin`]. Check the superclass documentation for the generic methods the library
     implements for all the model (such as downloading or saving, etc.)
 
     Parameters:
-        num_adapter (`int`): Number of `Adapter` this model will create.
+        num_adapter (`int`): The number of `Adapter` models this MultiAdapter will create or contains.
         adapters_kwargs (`List[dict]`, defaults to `MultiAdapter.default_adapter_kwargs`):
-            List of keyword arguments for `Adapter` constructor. `len(adapters_kwargs)` should equal to `num_adapter`.
+            A list of keyword arguments for the `Adapter` constructor. The length of `adapters_kwargs` should equal to
+            `num_adapter`.
         adapters (`List[Adapter]`, *optional*, defaults to None):
-            List of `Adapter` instances, `MultiAdapter` use `adapters` if this parameter is provided instead of
-            creating new one.
+            A list of `Adapter` instances. If this parameter is provided, `MultiAdapter` uses these adapters instead of
+            creating new ones.
         adapter_weights (`List[float]`, *optional*, defaults to None):
             List of floats representing the weight which will be multiply to each adapter's output before adding them
             together.

@@ -83,8 +83,8 @@ And finally we feed the data to the pipelien and wait for the result!
 generator = torch.manual_seed(7)
 
 out_image = pipe(
-    "At night, glowing cubes in front of the beach",
-    image=color_palette,
+    ["At night, glowing cubes in front of the beach"],
+    image=[color_palette],
     generator=generator,
 ).images[0]
 ```
@@ -113,9 +113,9 @@ All official checkpoints can be found under the authors' namespace [TencentARC/T
 |[RzZ/sd-v1.4-adapter-canny](https://huggingface.co/RzZ/sd-v1-4-adapter-canny)<br/> *Trained with canny edge detection* | A monochrome image with white edges on a black background.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-canny/resolve/main/sample_input.png"><img width="64" style="margin:0;padding:0;" src="https://huggingface.co/RzZ/sd-v1-4-adapter-canny/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-canny/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-canny/resolve/main/sample_output.png"/></a>|
 |[RzZ/sd-v1.4-adapter-sketch](https://huggingface.co/RzZ/sd-v1-4-adapter-sketch)<br/> *Trained with [PidiNet](https://github.com/zhuoinoulu/pidinet) edge detection* | A hand-drawn monochrome image with white outlines on a black background.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-sketch/resolve/main/sample_input.png"><img width="64" style="margin:0;padding:0;" src="https://huggingface.co/RzZ/sd-v1-4-adapter-sketch/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-sketch/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-sketch/resolve/main/sample_output.png"/></a>|
 |[RzZ/sd-v1.4-adapter-depth](https://huggingface.co/RzZ/sd-v1-4-adapter-depth)<br/> *Trained with Midas depth estimation*  | A grayscale image with black representing deep areas and white representing shallow areas.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-depth/resolve/main/sample_output.png"/></a>|
-|[**/sd-v1.4-adapter-openpose]()<br/> *Trained with OpenPose bone image*  | A [OpenPose bone](https://github.com/CMU-Perceptual-Computing-Lab/openpose) image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_human_openpose.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_human_openpose.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_human_openpose_0.png"/></a>|
-|[RzZ/sd-v1.4-adapter-keypose](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose)<br/> *Trained with mmpose skeleton image*  | A [mmpose skeleton]() image.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"/></a>|
-|[**/sd-v1.4-adapter-seg]()<br/>*Trained with semantic segmentation*  | An [COCO]()'s segmentation protocol image.|<a href="https://huggingface.co/takuma104/controlnet_dev/blob/main/gen_compare/control_images/converted/control_room_seg.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/control_images/converted/control_room_seg.png"/></a>|<a href="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"><img width="64" src="https://huggingface.co/takuma104/controlnet_dev/resolve/main/gen_compare/output_images/diffusers/output_room_seg_1.png"/></a> |
+|[RzZ/sd-v1.4-adapter-openpose](https://huggingface.co/RzZ/sd-v1-4-adapter-openpose)<br/> *Trained with OpenPose bone image*  | A [OpenPose bone](https://github.com/CMU-Perceptual-Computing-Lab/openpose) image.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-openpose/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-openpose/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-openpose/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-openpose/resolve/main/sample_output.png"/></a>|
+|[RzZ/sd-v1.4-adapter-keypose](https://huggingface.co/RzZ/sd-v1-4-adapter-keypose)<br/> *Trained with mmpose skeleton image*  | A [mmpose skeleton](https://github.com/open-mmlab/mmpose) image.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-keypose/resolve/main/sample_output.png"/></a>|
+|[RzZ/sd-v1.4-adapter-seg](https://huggingface.co/RzZ/sd-v1-4-adapter-seg)<br/>*Trained with semantic segmentation*  | An [custom](https://github.com/TencentARC/T2I-Adapter/discussions/25) segmentation protocol image.|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-seg/resolve/main/sample_input.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-seg/resolve/main/sample_input.png"/></a>|<a href="https://huggingface.co/RzZ/sd-v1-4-adapter-seg/resolve/main/sample_output.png"><img width="64" src="https://huggingface.co/RzZ/sd-v1-4-adapter-seg/resolve/main/sample_output.png"/></a> |
 
 ## Mix and match multiple adapters
 
@@ -134,16 +134,7 @@ cond_keypose = load_image(
     "https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_input_keypose.png"
 )
 cond_depth = load_image("https://huggingface.co/RzZ/sd-v1-4-adapter-keypose-depth/resolve/main/sample_input_depth.png")
-cond_keypose = torch.from_numpy(np.array(cond_keypose))
-cond_depth = torch.from_numpy(np.array(cond_depth))
-
-# make sure we only take the RGB channels if input is a RGBA image
-cond_keypose = cond_keypose[..., :3]
-cond_depth = cond_depth[..., :3]
-
-# preprocess image tensor
-cond = torch.cat([cond_keypose, cond_depth], dim=-1)
-cond = cond.permute(2, 0, 1) / 255
+cond = [[cond_keypose, cond_depth]]
 
 prompt = ["A man waling in an office room with nice view"]
 ```
@@ -175,7 +166,7 @@ pipe = StableDiffusionAdapterPipeline.from_pretrained(
     adapter=adapters,
 )
 
-images = pipe(prompt, [cond])
+images = pipe(prompt, cond)
 ```
 
 After prompt and image is processed by pipeline we should get the result looks like:

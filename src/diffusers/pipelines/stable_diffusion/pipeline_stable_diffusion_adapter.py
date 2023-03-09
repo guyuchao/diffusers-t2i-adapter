@@ -73,6 +73,14 @@ def preprocess(image):
     elif isinstance(image, PIL_Image.Image):
         image = [image]
 
+    multi_control = isinstance(image[0], list) or isinstance(image[0], tuple)
+    multi_control |= isinstance(image[0], torch.Tensor) and image[0].ndim == 4
+
+    if multi_control:
+        images = [preprocess(subset) for subset in image]
+        b, c, h, w = images[0].shape
+        image = [img.reshape([b * c, h, w]) for img in images]
+
     if isinstance(image[0], PIL_Image.Image):
         w, h = image[0].size
         w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
@@ -227,7 +235,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
             prompt (`str` or `List[str]`, *optional*):
                 The prompt or prompts to guide the image generation. If not defined, one has to pass `prompt_embeds`.
                 instead.
-            image (`torch.FloatTensor`, `PIL.Image.Image`, `List[torch.FloatTensor]` or `List[PIL.Image.Image]`):
+            image (`torch.FloatTensor`, `PIL.Image.Image`, `List[torch.FloatTensor]` or `List[PIL.Image.Image]` or `List[List[PIL.Image.Image]]`):
                 The Adapter input condition. Adapter uses this input condition to generate guidance to Unet. If the
                 type is specified as `Torch.FloatTensor`, it is passed to Adapter as is. PIL.Image.Image` can also be
                 accepted as an image. The control image is automatically resized to fit the output image.

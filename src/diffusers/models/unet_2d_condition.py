@@ -362,8 +362,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             block_out_channels[0], out_channels, kernel_size=conv_out_kernel, padding=conv_out_padding
         )
 
-        self.sideload_processor = SideloadProcessor()
-        self.set_sideload_processor(self.sideload_processor)  # set a default sideload processor
+        self.set_sideload_processor(SideloadProcessor())  # set a default sideload processor
 
     @property
     def attn_processors(self) -> Dict[str, AttnProcessor]:

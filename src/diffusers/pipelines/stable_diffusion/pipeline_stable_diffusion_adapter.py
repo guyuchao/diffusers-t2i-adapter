@@ -49,7 +49,7 @@ EXAMPLE_DOC_STRING = """
         >>> import torch
         >>> from diffusers import StableDiffusionAdapterPipeline, Adapter
 
-        >>> adapter = (Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color"),)
+        >>> adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
         >>> pipe = StableDiffusionAdapterPipeline.from_pretrained(
         ...     "RzZ/sd-v1-4-adapter",
         ...     adapter=adapter,

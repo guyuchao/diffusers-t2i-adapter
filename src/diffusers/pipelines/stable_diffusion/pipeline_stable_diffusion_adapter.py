@@ -227,6 +227,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         callback: Optional[Callable[[int, int, torch.FloatTensor], None]] = None,
         callback_steps: int = 1,
         cross_attention_kwargs: Optional[Dict[str, Any]] = None,
+        adapter_conditioning_scale: float = 1.0,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -360,6 +361,8 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
 
         # 7. Denoising loop
         adapter_state = self.adapter(adapter_input)
+        for k, v in adapter_state.items():
+            adapter_state[k] = v * adapter_conditioning_scale
         if num_images_per_prompt > 1:
             for k, v in adapter_state.items():
                 adapter_state[k] = v.repeat(num_images_per_prompt, 1, 1, 1)

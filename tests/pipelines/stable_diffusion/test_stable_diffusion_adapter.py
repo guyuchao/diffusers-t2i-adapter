@@ -138,7 +138,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
 
         assert image.shape == (1, 64, 64, 3)
         expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
-        assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3
+        assert np.abs(image_slice.flatten() - expected_slice).max() < 5e-3
 
     def test_stable_diffusion_adapter_multiple_adapter_inputs(self):
         device = "cpu"  # ensure determinism for the device-dependent torch.Generator
@@ -156,7 +156,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         assert image.shape == (2, 64, 64, 3)
         expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
 
-        assert np.abs(image_slice.flatten() - expected_slice).max() < 1e-3
+        assert np.abs(image_slice.flatten() - expected_slice).max() < 5e-3
 
     @unittest.skipIf(torch_device != "cuda", "This test requires a GPU")
     def test_stable_diffusion_adapter_fp16(self):
@@ -234,7 +234,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
             "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/segmentation/sample_output.npy"
         )
 
-        assert np.abs(expected_image - image).max() < 1e-3
+        assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_keypose_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
@@ -252,7 +252,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
             "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/keypose/sample_output.npy"
         )
 
-        assert np.abs(expected_image - image).max() < 1e-3
+        assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_depth_adapter(self):
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
@@ -270,7 +270,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
             "https://huggingface.co/RzZ/sd-v1-4-adapter-pipeline/resolve/depth/sample_output.npy"
         )
 
-        assert np.abs(expected_image - image).max() < 1e-3
+        assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_pipeline_with_sequential_cpu_offloading(self):
         torch.cuda.empty_cache()

@@ -203,7 +203,7 @@ class Adapter(ModelMixin, ConfigMixin):
                 x = self.body[idx](x)
             features.append(x)
 
-        return Sideloads({layer_name: h for layer_name, h in zip(self.target_layers, features)})
+        return features
 
 
 class MultiAdapter(ModelMixin, ConfigMixin):
@@ -310,10 +310,10 @@ class MultiAdapter(ModelMixin, ConfigMixin):
         x_list = torch.chunk(xs, self.num_adapter, dim=1)
         accume_state = None
         for x, w, adapter in zip(x_list, self.adapter_weights, self.adapters):
-            sideload = adapter(x)
+            features = adapter(x)
             if accume_state is None:
-                accume_state = Sideloads({layer_name: h * w for layer_name, h in sideload.items()})
+                accume_state = features
             else:
-                for layer_name in sideload.keys():
-                    accume_state[layer_name] += w * sideload[layer_name]
+                for i in range(len(features)):
+                    accume_state[i] += w * features[i]
         return accume_state

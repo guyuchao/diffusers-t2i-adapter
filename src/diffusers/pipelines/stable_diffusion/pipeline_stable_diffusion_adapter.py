@@ -361,13 +361,13 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
 
         # 7. Denoising loop
         adapter_state = self.adapter(adapter_input)
-        for k, v in adapter_state.items():
+        for k, v in enumerate(adapter_state):
             adapter_state[k] = v * adapter_conditioning_scale
         if num_images_per_prompt > 1:
-            for k, v in adapter_state.items():
+            for k, v in enumerate(adapter_state):
                 adapter_state[k] = v.repeat(num_images_per_prompt, 1, 1, 1)
         if do_classifier_free_guidance:
-            for k, v in adapter_state.items():
+            for k, v in enumerate(adapter_state):
                 adapter_state[k] = torch.cat([v] * 2, dim=0)
 
         num_warmup_steps = len(timesteps) - num_inference_steps * self.scheduler.order
@@ -377,14 +377,13 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
 
-                self.unet.sideload_processor.update_sideload(adapter_state)
                 # predict the noise residual
                 noise_pred = self.unet(
                     latent_model_input,
                     t,
                     encoder_hidden_states=prompt_embeds,
                     cross_attention_kwargs=cross_attention_kwargs,
-                    # downsample_adapter_states=adapter_dw_state,
+                    down_block_additional_residuals=adapter_state,
                 ).sample
 
                 # perform guidance

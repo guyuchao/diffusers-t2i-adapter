@@ -150,7 +150,6 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         )
         # TODO: make sure from_pretrain/save_pretrain still work
         self.register_modules(adapter=adapter)
-        # self.adapter = adapter
 
     def enable_sequential_cpu_offload(self, gpu_id=0):
         r"""

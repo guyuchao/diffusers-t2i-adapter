@@ -178,7 +178,8 @@ After prompt and image is processed by pipeline we should get the result looks l
 
 Foundatly T2I-Adapter is try to achieve the same goal as ControlNet with simliar approch, the main difference between the two is:
 1. Unlike ControlNet which "fork" the encoder part of the UNet to process conditioning signal, T2I-Adapter use a light weight network to process *control image*. So Adapter will have a shorter training time, smaller model size but slighly lower image quality/control over generated images.
-2. There exist a special variation of T2I-Adapter, Style-Adapter, that first make use of CLIP vision encoder to process *control image* first then adapter.
+2. Adapter model will only be run once during enitre diffusion process no matter how many sample steps you set, which means Adapter will inference much faster compare to ControlNet and you can easily run multiple adapter at the same time on consumer grade GPU.
+3. There exist a special variation of T2I-Adapter, Style-Adapter, that first make use of CLIP vision encoder to process *control image* first then adapter.
 
 
 ## StableDiffusionAdapterPipeline

@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .attention import AdaGroupNorm
-from .modeling_utils import SideloadMixin
 
 
 class Upsample1D(nn.Module):
@@ -401,7 +400,7 @@ class KUpsample2D(nn.Module):
         return F.conv_transpose2d(x, weight, stride=2, padding=self.pad * 2 + 1)
 
 
-class ResnetBlock2D(SideloadMixin, nn.Module):
+class ResnetBlock2D(nn.Module):
     r"""
     A Resnet block.
 

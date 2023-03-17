@@ -20,7 +20,6 @@ from torch import nn
 from .attention import AdaGroupNorm, AttentionBlock
 from .cross_attention import CrossAttention, CrossAttnAddedKVProcessor
 from .dual_transformer_2d import DualTransformer2DModel
-from .modeling_utils import SideloadMixin
 from .resnet import Downsample2D, FirDownsample2D, FirUpsample2D, KDownsample2D, KUpsample2D, ResnetBlock2D, Upsample2D
 from .transformer_2d import Transformer2DModel
 
@@ -448,7 +447,7 @@ class UNetMidBlock2D(nn.Module):
         return hidden_states
 
 
-class UNetMidBlock2DCrossAttn(SideloadMixin, nn.Module):
+class UNetMidBlock2DCrossAttn(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -721,7 +720,7 @@ class AttnDownBlock2D(nn.Module):
         return hidden_states, output_states
 
 
-class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
+class CrossAttnDownBlock2D(nn.Module):
     def __init__(
         self,
         in_channels: int,
@@ -848,10 +847,10 @@ class CrossAttnDownBlock2D(SideloadMixin, nn.Module):
                 ).sample
 
             output_states += (hidden_states,)
-        
+
         if additional_residuals is not None:
             hidden_states += additional_residuals
-        
+
         if self.downsamplers is not None:
             for downsampler in self.downsamplers:
                 hidden_states = downsampler(hidden_states)
@@ -1700,7 +1699,7 @@ class AttnUpBlock2D(nn.Module):
         return hidden_states
 
 
-class CrossAttnUpBlock2D(SideloadMixin, nn.Module):
+class CrossAttnUpBlock2D(nn.Module):
     def __init__(
         self,
         in_channels: int,

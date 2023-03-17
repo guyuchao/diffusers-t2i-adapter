@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from ..configuration_utils import ConfigMixin, register_to_config
-from .modeling_utils import ModelMixin, Sideloads
+from .modeling_utils import ModelMixin
 from .resnet import Downsample2D
 
 
@@ -90,19 +90,10 @@ class Adapter(ModelMixin, ConfigMixin):
             residual back.
         use_conv (`bool`, *optional*, defaults to False):
             Whether to use a conv-2d layer for down sample feature map or a average pooling layer.
-        target_layers (`List[int]`, *optional*, defaults to `Adapter.DEFAULT_TARGET`):
-            The names of layers from `UNet2DConditionModel` that adapter's outputs will be fusing to.
         input_scale_factor (`int`, *optional*, defaults to 8):
             The down scaling factor will be apply to input image when it is frist deliver to Adapter. Which should be
             equal to the down scaling factor of the VAE of your choice.
     """
-
-    DEFAULT_TARGET = [
-        "down_blocks.0.attentions.1",
-        "down_blocks.1.attentions.1",
-        "down_blocks.2.attentions.1",
-        "down_blocks.3.resnets.1",
-    ]
 
     @register_to_config
     def __init__(
@@ -115,14 +106,12 @@ class Adapter(ModelMixin, ConfigMixin):
         proj_kerenl_size: int = 1,
         res_block_skip: bool = True,
         use_conv: bool = False,
-        target_layers: List[str] = DEFAULT_TARGET,
         input_scale_factor: int = 8,
     ):
         super(Adapter, self).__init__()
 
         self.num_downsample_blocks = len(block_out_channels)
         self.unshuffle = nn.PixelUnshuffle(input_scale_factor)
-        self.target_layers = target_layers
         self.num_res_blocks = num_res_blocks
         self.body = []
 
@@ -185,7 +174,7 @@ class Adapter(ModelMixin, ConfigMixin):
                 proj_kerenl_size // 2,
             )
 
-    def forward(self, x: torch.Tensor) -> Sideloads:
+    def forward(self, x: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
             x (`torch.Tensor`):
@@ -235,7 +224,6 @@ class MultiAdapter(ModelMixin, ConfigMixin):
         "kerenl_size": 3,
         "res_block_skip": False,
         "use_conv": False,
-        "target_layers": Adapter.DEFAULT_TARGET,
         "input_scale_factor": 8,
     }
 
@@ -295,7 +283,7 @@ class MultiAdapter(ModelMixin, ConfigMixin):
         )
         return multi_adapter
 
-    def forward(self, xs: torch.Tensor) -> Sideloads:
+    def forward(self, xs: torch.Tensor) -> List[torch.Tensor]:
         r"""
         Args:
             xs (`torch.Tensor`):

@@ -17,7 +17,6 @@
 import inspect
 import os
 import warnings
-from collections import UserDict
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
@@ -906,38 +905,3 @@ def _get_model_file(
                 f"Otherwise, make sure '{pretrained_model_name_or_path}' is the correct path to a directory "
                 f"containing a file named {weights_name}"
             )
-
-
-class Sideloads(UserDict):
-    """
-    A dataclass that wrap all adpater's output togather, it also keep track the mapping between each adpater state and
-    targeted layer.
-    """
-
-    def __setitem__(self, name: str, state: Tensor):
-        super().__setitem__(name, state)
-
-    def to(self, torch_device: Union[str, torch.device]):
-        for k, v in self.items():
-            self[k] = v.to(torch_device)
-
-    def clone(self) -> "Sideloads":
-        return Sideloads({k: ten.clone() for k, ten in self.items()})
-
-
-class SideloadMixin:
-    """
-    A forward-pass hook that connect targeted layer/nn.module to sideload processor, this mixin also keep the module
-    name availible within the object.
-    """
-
-    def set_sideload_processor(self, module_name, processor):
-        self._sideload_processor = processor
-        self._submodule_name = module_name
-
-    def __call__(self, *args, **kwargs):
-        hidden_state = super().__call__(*args, **kwargs)
-        if hasattr(self, "_submodule_name") and hasattr(self, "_sideload_processor"):
-            return self._sideload_processor(self._submodule_name, hidden_state)
-        else:
-            return hidden_state

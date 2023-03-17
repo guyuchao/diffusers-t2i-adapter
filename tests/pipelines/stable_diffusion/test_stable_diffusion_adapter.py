@@ -85,10 +85,6 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         torch.manual_seed(0)
         adapter = Adapter(
             block_out_channels=[32, 64],
-            target_layers=[
-                "down_blocks.0.attentions.1",
-                "down_blocks.1.resnets.1",
-            ],
             channels_in=3,
             num_res_blocks=2,
             kerenl_size=1,

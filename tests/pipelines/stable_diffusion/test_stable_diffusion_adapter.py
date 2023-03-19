@@ -136,8 +136,6 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
         assert np.abs(image_slice.flatten() - expected_slice).max() < 5e-3
 
-
-
     def test_attention_slicing_forward_pass(self):
         return self._test_attention_slicing_forward_pass(expected_max_diff=2e-3)
 

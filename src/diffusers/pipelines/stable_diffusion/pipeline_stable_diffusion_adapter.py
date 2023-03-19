@@ -30,8 +30,8 @@ from ...utils import (
     randn_tensor,
     replace_example_docstring,
 )
-from . import StableDiffusionPipelineOutput
 from ..pipeline_utils import DiffusionPipeline
+from . import StableDiffusionPipelineOutput
 from .safety_checker import StableDiffusionSafetyChecker
 
 
@@ -53,7 +53,7 @@ EXAMPLE_DOC_STRING = """
 
         >>> adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
         >>> pipe = StableDiffusionAdapterPipeline.from_pretrained(
-        ...     "RzZ/sd-v1-4-adapter",
+        ...     "CompVis/stable-diffusion-v1-4",
         ...     adapter=adapter,
         ...     torch_dtype=torch.float16,
         ... )
@@ -69,7 +69,7 @@ EXAMPLE_DOC_STRING = """
 """
 
 
-def preprocess(image):
+def preprocess(image, target_height, target_width):
     if isinstance(image, torch.Tensor):
         return image
     elif isinstance(image, PIL_Image.Image):
@@ -79,24 +79,29 @@ def preprocess(image):
     multi_control |= isinstance(image[0], torch.Tensor) and image[0].ndim == 4
 
     if multi_control:
-        images = [preprocess(subset) for subset in image]
+        images = [preprocess(subset, target_height, target_width) for subset in image]
         b, c, h, w = images[0].shape
         image = [img.reshape([b * c, h, w]) for img in images]
 
     if isinstance(image[0], PIL_Image.Image):
-        w, h = image[0].size
-        w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
-
-        image = [np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :] for i in image]
+        image = [
+            np.array(i.resize((target_width, target_height), resample=PIL_INTERPOLATION["lanczos"]))[None, :]
+            for i in image
+        ]
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)
-        # NOTE: offical adapter weight is trained with [0, 1] value space
-        # image = 2.0 * image - 1.0
         image = torch.from_numpy(image)
     elif isinstance(image[0], torch.Tensor):
         if image[0].ndim == 3:
-            image = torch.stack(image, dim=0)
+            size_align_4d = []
+            for img_ten in image:
+                h, w = img_ten.shape[-2:]
+                img_ten = torch.unsqueeze(img_ten, dim=0)
+                if (h, w) != (target_height, target_width):
+                    img_ten = torch.nn.functional.interpolate(img_ten, (target_height, target_width))
+                size_align_4d.append(img_ten)
+            image = torch.cat(size_align_4d, dim=0)
         elif image[0].ndim == 4:
             image = torch.cat(image, dim=0)
         else:
@@ -454,7 +459,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         if accepts_generator:
             extra_step_kwargs["generator"] = generator
         return extra_step_kwargs
-    
+
     # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline.check_inputs
     def check_inputs(
         self,
@@ -628,7 +633,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             prompt, height, width, callback_steps, negative_prompt, prompt_embeds, negative_prompt_embeds
         )
 
-        adapter_input = preprocess(image).to(device)
+        adapter_input = preprocess(image, height, width).to(device)
         adapter_input = adapter_input.to(self.adapter.dtype)
 
         # 2. Define call parameters

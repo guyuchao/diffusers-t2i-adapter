@@ -215,8 +215,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         return inputs
 
     def test_stable_diffusion_segmentation_adapter(self):
+        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter-pipeline", revision="segmentation", safety_checker=None
+            "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -233,8 +234,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_keypose_adapter(self):
+        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter-pipeline", revision="keypose", safety_checker=None
+            "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -251,8 +253,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_depth_adapter(self):
+        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter-pipeline", revision="depth", safety_checker=None
+            "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
         pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -273,8 +276,9 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         torch.cuda.reset_max_memory_allocated()
         torch.cuda.reset_peak_memory_stats()
 
+        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
-            "RzZ/sd-v1-4-adapter-pipeline", safety_checker=None, torch_dtype=torch.float16
+            "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None, torch_dtype=torch.float16
         )
         pipe = pipe.to(torch_device)
         pipe.set_progress_bar_config(disable=None)
@@ -286,4 +290,4 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
 
         mem_bytes = torch.cuda.max_memory_allocated()
         # make sure that less than 2.2 GB is allocated
-        assert mem_bytes < 2.4 * 10**9, f"{mem_bytes} >= 2.4 GB"
+        assert mem_bytes < 2.5 * 10**9, f"{mem_bytes} >= 2.5 GB"

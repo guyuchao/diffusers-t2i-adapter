@@ -19,7 +19,7 @@ import torch
 from PIL import Image as PIL_Image
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
-from ...models import Adapter, AutoencoderKL, UNet2DConditionModel, MultiAdapter
+from ...models import Adapter, AutoencoderKL, MultiAdapter, UNet2DConditionModel
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import (
     PIL_INTERPOLATION,
@@ -113,9 +113,11 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
 
     Args:
         adapter ([`Adapter`] or [`MultiAdapter`] or `List[Adapter]`):
-            Provides additional conditioning to the unet during the denoising process. If you set multiple Adapter
-            as a list, the outputs from each Adapter are added together to create one combined additional
-            conditioning.
+            Provides additional conditioning to the unet during the denoising process. If you set multiple Adapter as a
+            list, the outputs from each Adapter are added together to create one combined additional conditioning.
+        adapter_weights (`List[float]`, *optional*, defaults to None):
+            List of floats representing the weight which will be multiply to each adapter's output before adding them
+            together.
         vae ([`AutoencoderKL`]):
             Variational Auto-Encoder (VAE) Model to encode and decode images to and from latent representations.
         text_encoder ([`CLIPTextModel`]):
@@ -147,13 +149,14 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPFeatureExtractor,
+        adapter_weights: Optional[List[float]] = None,
         requires_safety_checker: bool = True,
     ):
         super().__init__(
             vae, text_encoder, tokenizer, unet, scheduler, safety_checker, feature_extractor, requires_safety_checker
         )
         if isinstance(adapter, (list, tuple)):
-            adapter = MultiAdapter(adapter)
+            adapter = MultiAdapter(adapter, adapter_weights=adapter_weights)
         self.register_modules(adapter=adapter)
 
     def enable_sequential_cpu_offload(self, gpu_id=0):

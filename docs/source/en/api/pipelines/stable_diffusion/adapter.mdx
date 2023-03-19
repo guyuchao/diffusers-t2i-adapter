@@ -161,7 +161,7 @@ adapters = MultiAdapter(
 adapters = adapters.to(torch.float16)
 
 pipe = StableDiffusionAdapterPipeline.from_pretrained(
-    "RzZ/sd-v1-4-adapter-pipeline",
+    "CompVis/stable-diffusion-v1-4",
     torch_dtype=torch.float16,
     adapter=adapters,
 )

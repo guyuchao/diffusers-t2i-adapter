@@ -151,7 +151,7 @@ Now we can using `from_adapters` method combine keypose and depth adapter into o
 ```py
 from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
 
-adapters = MultiAdapter.from_adapters(
+adapters = MultiAdapter(
     [
         Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
         Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),

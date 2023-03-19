@@ -195,7 +195,7 @@ class Adapter(ModelMixin, ConfigMixin):
         return features
 
 
-class MultiAdapter(ModelMixin, ConfigMixin):
+class MultiAdapter(ModelMixin):
     r"""
     MultiAdapter is a wrapper model that contains multiple adapter models and merges their outputs according to
     user-assigned weighting.
@@ -204,84 +204,22 @@ class MultiAdapter(ModelMixin, ConfigMixin):
     implements for all the model (such as downloading or saving, etc.)
 
     Parameters:
-        num_adapter (`int`): The number of `Adapter` models this MultiAdapter will create or contains.
-        adapters_kwargs (`List[dict]`, defaults to `MultiAdapter.default_adapter_kwargs`):
-            A list of keyword arguments for the `Adapter` constructor. The length of `adapters_kwargs` should equal to
-            `num_adapter`.
         adapters (`List[Adapter]`, *optional*, defaults to None):
-            A list of `Adapter` instances. If this parameter is provided, `MultiAdapter` uses these adapters instead of
-            creating new ones.
+            A list of `Adapter` model instances.
         adapter_weights (`List[float]`, *optional*, defaults to None):
             List of floats representing the weight which will be multiply to each adapter's output before adding them
             together.
     """
 
-    ignore_for_config = ["adapters"]
-    default_adapter_kwargs = {
-        "block_out_channels": [320, 640, 1280, 1280],
-        "num_res_blocks": 3,
-        "channels_in": 3,
-        "kerenl_size": 3,
-        "res_block_skip": False,
-        "use_conv": False,
-        "input_scale_factor": 8,
-    }
-
-    @register_to_config
-    def __init__(
-        self,
-        num_adapter: int = 2,
-        adapters_kwargs: List[Dict[str, Any]] = [default_adapter_kwargs] * 2,
-        adapters: Optional[List[Adapter]] = None,
-        adapter_weights: Optional[List[float]] = None,
-    ):
+    def __init__(self, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None):
         super(MultiAdapter, self).__init__()
 
-        self.num_adapter = num_adapter
-        if adapters is None:
-            self.adapters = nn.ModuleList([Adapter(**kwargs) for kwargs in adapters_kwargs])
-        else:
-            self._check_adapter_config(adapters_kwargs, adapters)
-            self.adapters = nn.ModuleList(adapters)
+        self.num_adapter = len(adapters)
+        self.adapters = nn.ModuleList(adapters)
         if adapter_weights is None:
-            self.adapter_weights = nn.Parameter(torch.tensor([1 / num_adapter] * num_adapter))
+            self.adapter_weights = nn.Parameter(torch.tensor([1 / self.num_adapter] * self.num_adapter))
         else:
             self.adapter_weights = nn.Parameter(torch.tensor(adapter_weights))
-
-    def _check_adapter_config(self, adapters_kwargs: List[Dict[str, Any]], adapters: List[Adapter]):
-        for i, (init_kwargs, adapter) in enumerate(zip(adapters_kwargs, adapters)):
-            config = adapter.config
-            for k, v in init_kwargs.items():
-                if v != config[k]:
-                    raise ValueError(
-                        f"keyword argument \"{k}\" from adapters_kwargs of {i}'th adapter dont match the Adapter instance's config!"
-                        f"  {v} != {config[k]}"
-                    )
-
-    @classmethod
-    def from_adapters(cls, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None) -> "MultiAdapter":
-        r"""
-        Create a MultiAdapter model with existing Adapter instances
-
-        Args:
-            adapters (`List[Adapter]`):
-                List of `Adapter` instances `MultiAdapter` will use.
-            adapter_weights (`List[float]`, *optional*, defaults to None):
-                List of floats representing the weight which will be multiply to each adapter's output before adding
-                them together.
-        """
-
-        def get_public_kwargs(kwargs):
-            return {k: v for k, v in kwargs.items() if not k.startswith("_")}
-
-        adapters_kwargs = [get_public_kwargs(adapter.config) for adapter in adapters]
-        multi_adapter = cls(
-            num_adapter=len(adapters),
-            adapters_kwargs=adapters_kwargs,
-            adapters=adapters,
-            adapter_weights=adapter_weights,
-        )
-        return multi_adapter
 
     def forward(self, xs: torch.Tensor) -> List[torch.Tensor]:
         r"""

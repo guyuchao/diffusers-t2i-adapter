@@ -19,7 +19,7 @@ import torch
 from PIL import Image as PIL_Image
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
-from ...models import Adapter, AutoencoderKL, UNet2DConditionModel
+from ...models import Adapter, AutoencoderKL, UNet2DConditionModel, MultiAdapter
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import (
     PIL_INTERPOLATION,
@@ -112,6 +112,10 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
     library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
 
     Args:
+        adapter ([`Adapter`] or [`MultiAdapter`] or `List[Adapter]`):
+            Provides additional conditioning to the unet during the denoising process. If you set multiple Adapter
+            as a list, the outputs from each Adapter are added together to create one combined additional
+            conditioning.
         vae ([`AutoencoderKL`]):
             Variational Auto-Encoder (VAE) Model to encode and decode images to and from latent representations.
         text_encoder ([`CLIPTextModel`]):
@@ -139,7 +143,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         text_encoder: CLIPTextModel,
         tokenizer: CLIPTokenizer,
         unet: UNet2DConditionModel,
-        adapter: Adapter,
+        adapter: Union[Adapter, MultiAdapter, List[Adapter]],
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPFeatureExtractor,
@@ -148,7 +152,8 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         super().__init__(
             vae, text_encoder, tokenizer, unet, scheduler, safety_checker, feature_extractor, requires_safety_checker
         )
-        # TODO: make sure from_pretrain/save_pretrain still work
+        if isinstance(adapter, (list, tuple)):
+            adapter = MultiAdapter(adapter)
         self.register_modules(adapter=adapter)
 
     def enable_sequential_cpu_offload(self, gpu_id=0):

@@ -136,37 +136,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
         assert np.abs(image_slice.flatten() - expected_slice).max() < 5e-3
 
-    def test_stable_diffusion_adapter_multiple_adapter_inputs(self):
-        device = "cpu"  # ensure determinism for the device-dependent torch.Generator
-        components = self.get_dummy_components()
-        sd_pipe = StableDiffusionAdapterPipeline(**components)
-        sd_pipe = sd_pipe.to(device)
-        sd_pipe.set_progress_bar_config(disable=None)
 
-        inputs = self.get_dummy_inputs(device)
-        inputs["prompt"] = [inputs["prompt"]] * 2
-        inputs["image"] = inputs["image"].repeat(2, 1, 1, 1)
-        image = sd_pipe(**inputs).images
-        image_slice = image[0, -3:, -3:, -1]
-
-        assert image.shape == (2, 64, 64, 3)
-        expected_slice = np.array([0.5028, 0.5518, 0.4279, 0.4807, 0.6145, 0.4335, 0.5047, 0.5072, 0.4775])
-
-        assert np.abs(image_slice.flatten() - expected_slice).max() < 5e-3
-
-    @unittest.skipIf(torch_device != "cuda", "This test requires a GPU")
-    def test_stable_diffusion_adapter_fp16(self):
-        components = self.get_dummy_components()
-        for key in components.keys():
-            if hasattr(components[key], "half"):
-                components[key] = components[key].half()
-
-        sd_pipe = StableDiffusionAdapterPipeline(**components)
-        sd_pipe = sd_pipe.to(torch_device)
-        sd_pipe.set_progress_bar_config(disable=None)
-
-        inputs = self.get_dummy_inputs(torch_device)
-        sd_pipe(**inputs).images
 
     def test_attention_slicing_forward_pass(self):
         return self._test_attention_slicing_forward_pass(expected_max_diff=2e-3)

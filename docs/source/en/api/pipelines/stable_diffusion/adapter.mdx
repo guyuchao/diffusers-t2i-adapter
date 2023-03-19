@@ -69,7 +69,7 @@ from diffusers import StableDiffusionAdapterPipeline, Adapter
 
 adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
 pipe = StableDiffusionAdapterPipeline.from_pretrained(
-    "RzZ/sd-v1-4-adapter",
+    "CompVis/stable-diffusion-v1-4",
     adapter=adapter,
     torch_dtype=torch.float16,
 )
@@ -151,13 +151,10 @@ Now we can using `from_adapters` method combine keypose and depth adapter into o
 ```py
 from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
 
-adapters = MultiAdapter(
-    [
-        Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
-        Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
-    ],
-    adapter_weights=[0.8, 0.8],
-)
+adapters = [
+    Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
+    Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
+]
 adapters = adapters.to(torch.float16)
 
 pipe = StableDiffusionAdapterPipeline.from_pretrained(

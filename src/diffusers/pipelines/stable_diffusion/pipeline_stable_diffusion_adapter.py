@@ -511,7 +511,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         latents = latents * self.scheduler.init_noise_sigma
         return latents
 
-    # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionControlNetPipeline._default_height_width
+    # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_controlnet.StableDiffusionControlNetPipeline._default_height_width
     def _default_height_width(self, height, width, image):
         # NOTE: It is possible that a list of images have different
         # dimensions for each image, so just checking the first image
@@ -625,8 +625,8 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
                 `self.processor` in
                 [diffusers.cross_attention](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/cross_attention.py).
             adapter_conditioning_scale (`float` or `List[float]`, *optional*, defaults to 1.0):
-                The outputs of the adapter are multiplied by `adapter_conditioning_scale` before they are added
-                to the residual in the original unet. If multiple adapters are specified in init, you can set the
+                The outputs of the adapter are multiplied by `adapter_conditioning_scale` before they are added to the
+                residual in the original unet. If multiple adapters are specified in init, you can set the
                 corresponding scale as a list.
 
         Examples:

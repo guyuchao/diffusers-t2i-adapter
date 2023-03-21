@@ -206,9 +206,6 @@ class MultiAdapter(ModelMixin):
     Parameters:
         adapters (`List[Adapter]`, *optional*, defaults to None):
             A list of `Adapter` model instances.
-        adapter_weights (`List[float]`, *optional*, defaults to None):
-            List of floats representing the weight which will be multiply to each adapter's output before adding them
-            together.
     """
 
     def __init__(self, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None):
@@ -216,18 +213,22 @@ class MultiAdapter(ModelMixin):
 
         self.num_adapter = len(adapters)
         self.adapters = nn.ModuleList(adapters)
-        if adapter_weights is None:
-            self.adapter_weights = nn.Parameter(torch.tensor([1 / self.num_adapter] * self.num_adapter))
-        else:
-            self.adapter_weights = nn.Parameter(torch.tensor(adapter_weights))
 
-    def forward(self, xs: torch.Tensor) -> List[torch.Tensor]:
+    def forward(self, xs: torch.Tensor, adapter_weights: Optional[List[float]] = None) -> List[torch.Tensor]:
         r"""
         Args:
             xs (`torch.Tensor`):
                 (batch, channel, height, width) input images for multiple adapter models concated along dimension 1,
                 `channel` should equal to `num_adapter` * "number of channel of image".
+            adapter_weights (`List[float]`, *optional*, defaults to None):
+                List of floats representing the weight which will be multiply to each adapter's output before adding
+                them together.
         """
+        if adapter_weights is None:
+            adapter_weights = torch.tensor([1 / self.num_adapter] * self.num_adapter)
+        else:
+            adapter_weights = torch.tensor(adapter_weights)
+
         if xs.shape[1] % self.num_adapter != 0:
             raise ValueError(
                 f"Expecting multi-adapter's input have number of channel that cab be evenly divisible "
@@ -235,7 +236,7 @@ class MultiAdapter(ModelMixin):
             )
         x_list = torch.chunk(xs, self.num_adapter, dim=1)
         accume_state = None
-        for x, w, adapter in zip(x_list, self.adapter_weights, self.adapters):
+        for x, w, adapter in zip(x_list, adapter_weights, self.adapters):
             features = adapter(x)
             if accume_state is None:
                 accume_state = features

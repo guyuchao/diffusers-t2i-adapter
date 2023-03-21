@@ -16,8 +16,8 @@ import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
+import PIL
 import torch
-from PIL import Image as PIL_Image
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
 from ...models import Adapter, AutoencoderKL, MultiAdapter, UNet2DConditionModel
@@ -69,39 +69,24 @@ EXAMPLE_DOC_STRING = """
 """
 
 
-def preprocess(image, target_height, target_width):
+def preprocess(image):
     if isinstance(image, torch.Tensor):
         return image
-    elif isinstance(image, PIL_Image.Image):
+    elif isinstance(image, PIL.Image.Image):
         image = [image]
 
-    multi_control = isinstance(image[0], list) or isinstance(image[0], tuple)
-    multi_control |= isinstance(image[0], torch.Tensor) and image[0].ndim == 4
+    if isinstance(image[0], PIL.Image.Image):
+        w, h = image[0].size
+        w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
 
-    if multi_control:
-        images = [preprocess(subset, target_height, target_width) for subset in image]
-        b, c, h, w = images[0].shape
-        image = [img.reshape([b * c, h, w]) for img in images]
-
-    if isinstance(image[0], PIL_Image.Image):
-        image = [
-            np.array(i.resize((target_width, target_height), resample=PIL_INTERPOLATION["lanczos"]))[None, :]
-            for i in image
-        ]
+        image = [np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :] for i in image]
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)
         image = torch.from_numpy(image)
     elif isinstance(image[0], torch.Tensor):
         if image[0].ndim == 3:
-            size_align_4d = []
-            for img_ten in image:
-                h, w = img_ten.shape[-2:]
-                img_ten = torch.unsqueeze(img_ten, dim=0)
-                if (h, w) != (target_height, target_width):
-                    img_ten = torch.nn.functional.interpolate(img_ten, (target_height, target_width))
-                size_align_4d.append(img_ten)
-            image = torch.cat(size_align_4d, dim=0)
+            image = torch.stack(image, dim=0)
         elif image[0].ndim == 4:
             image = torch.cat(image, dim=0)
         else:
@@ -526,12 +511,38 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         latents = latents * self.scheduler.init_noise_sigma
         return latents
 
+    # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionControlNetPipeline._default_height_width
+    def _default_height_width(self, height, width, image):
+        # NOTE: It is possible that a list of images have different
+        # dimensions for each image, so just checking the first image
+        # is not _exactly_ correct, but it is simple.
+        while isinstance(image, list):
+            image = image[0]
+
+        if height is None:
+            if isinstance(image, PIL.Image.Image):
+                height = image.height
+            elif isinstance(image, torch.Tensor):
+                height = image.shape[3]
+
+            height = (height // 8) * 8  # round down to nearest multiple of 8
+
+        if width is None:
+            if isinstance(image, PIL.Image.Image):
+                width = image.width
+            elif isinstance(image, torch.Tensor):
+                width = image.shape[2]
+
+            width = (width // 8) * 8  # round down to nearest multiple of 8
+
+        return height, width
+
     @torch.no_grad()
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def __call__(
         self,
         prompt: Union[str, List[str]] = None,
-        image: Union[torch.Tensor, PIL_Image.Image, List[PIL_Image.Image]] = None,
+        image: Union[torch.Tensor, PIL.Image.Image, List[PIL.Image.Image]] = None,
         height: Optional[int] = None,
         width: Optional[int] = None,
         num_inference_steps: int = 50,
@@ -548,7 +559,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         callback: Optional[Callable[[int, int, torch.FloatTensor], None]] = None,
         callback_steps: int = 1,
         cross_attention_kwargs: Optional[Dict[str, Any]] = None,
-        adapter_conditioning_scale: float = 1.0,
+        adapter_conditioning_scale: Union[float, List[float]] = 1.0,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -624,8 +635,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             (nsfw) content, according to the `safety_checker`.
         """
         # 0. Default height and width to unet
-        height = height or self.unet.config.sample_size * self.vae_scale_factor
-        width = width or self.unet.config.sample_size * self.vae_scale_factor
+        height, width = self._default_height_width(height, width, image)
         device = self._execution_device
 
         # 1. Check inputs. Raise error if not correct
@@ -633,7 +643,13 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             prompt, height, width, callback_steps, negative_prompt, prompt_embeds, negative_prompt_embeds
         )
 
-        adapter_input = preprocess(image, height, width).to(device)
+        is_multi_adapter = isinstance(self.adapter, MultiAdapter)
+        if is_multi_adapter:
+            adapter_input = [preprocess(img).to(device) for img in image]
+            n, c, h, w = adapter_input[0].shape
+            adapter_input = torch.stack([x.reshape([n * c, h, w]) for x in adapter_input])
+        else:
+            adapter_input = preprocess(image).to(device)
         adapter_input = adapter_input.to(self.adapter.dtype)
 
         # 2. Define call parameters

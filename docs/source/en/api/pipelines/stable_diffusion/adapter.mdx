@@ -146,7 +146,7 @@ Two *control image* should look like follows:
 
 
 Now we can using `from_adapters` method combine keypose and depth adapter into one, then pass our newly created [`MultiAdapter`] to 
-[`StableDiffusionAdapterPipeline`]. You can also play around the value of `adapter_weights` to balance the control between adapters.
+[`StableDiffusionAdapterPipeline`]. You can also play around the value of `adapter_conditioning_scale` to balance the control between adapters.
 
 ```py
 from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
@@ -163,7 +163,7 @@ pipe = StableDiffusionAdapterPipeline.from_pretrained(
     adapter=adapters,
 )
 
-images = pipe(prompt, cond)
+images = pipe(prompt, cond, adapter_conditioning_scale=[0.8, 0.8])
 ```
 
 After prompt and image is processed by pipeline we should get the result looks like:

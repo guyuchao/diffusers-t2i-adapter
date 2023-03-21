@@ -624,6 +624,10 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
                 A kwargs dictionary that if specified is passed along to the `AttnProcessor` as defined under
                 `self.processor` in
                 [diffusers.cross_attention](https://github.com/huggingface/diffusers/blob/main/src/diffusers/models/cross_attention.py).
+            adapter_conditioning_scale (`float` or `List[float]`, *optional*, defaults to 1.0):
+                The outputs of the adapter are multiplied by `adapter_conditioning_scale` before they are added
+                to the residual in the original unet. If multiple adapters are specified in init, you can set the
+                corresponding scale as a list.
 
         Examples:
 

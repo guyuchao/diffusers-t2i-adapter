@@ -511,7 +511,6 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         latents = latents * self.scheduler.init_noise_sigma
         return latents
 
-    # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion_controlnet.StableDiffusionControlNetPipeline._default_height_width
     def _default_height_width(self, height, width, image):
         # NOTE: It is possible that a list of images have different
         # dimensions for each image, so just checking the first image
@@ -523,7 +522,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             if isinstance(image, PIL.Image.Image):
                 height = image.height
             elif isinstance(image, torch.Tensor):
-                height = image.shape[3]
+                height = image.shape[-2]
 
             height = (height // 8) * 8  # round down to nearest multiple of 8
 
@@ -531,7 +530,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             if isinstance(image, PIL.Image.Image):
                 width = image.width
             elif isinstance(image, torch.Tensor):
-                width = image.shape[2]
+                width = image.shape[-1]
 
             width = (width // 8) * 8  # round down to nearest multiple of 8
 
@@ -724,7 +723,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
                     t,
                     encoder_hidden_states=prompt_embeds,
                     cross_attention_kwargs=cross_attention_kwargs,
-                    down_block_additional_residuals=adapter_state,
+                    down_block_additional_residuals=[state.clone() for state in adapter_state],
                 ).sample
 
                 # perform guidance

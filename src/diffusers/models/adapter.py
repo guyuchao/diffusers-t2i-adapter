@@ -208,7 +208,7 @@ class MultiAdapter(ModelMixin):
             A list of `Adapter` model instances.
     """
 
-    def __init__(self, adapters: List[Adapter], adapter_weights: Optional[List[float]] = None):
+    def __init__(self, adapters: List[Adapter]):
         super(MultiAdapter, self).__init__()
 
         self.num_adapter = len(adapters)

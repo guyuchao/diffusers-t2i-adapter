@@ -586,8 +586,7 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             if hasattr(downsample_block, "has_cross_attention") and downsample_block.has_cross_attention:
                 additional_kwargs = {}
                 if is_adapter and len(down_block_additional_residuals) > 0:
-                    additional_kwargs["additional_residuals"] = down_block_additional_residuals[0]
-                    down_block_additional_residuals = down_block_additional_residuals[1:]
+                    additional_kwargs["additional_residuals"] = down_block_additional_residuals.pop(0)
 
                 sample, res_samples = downsample_block(
                     hidden_states=sample,
@@ -600,8 +599,8 @@ class UNet2DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             else:
                 sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
 
-                if is_adapter and idx < len(down_block_additional_residuals):
-                    sample += down_block_additional_residuals[idx]
+                if is_adapter and len(down_block_additional_residuals) > 0:
+                    sample += down_block_additional_residuals.pop(0)
 
             down_block_res_samples += res_samples
 

@@ -78,8 +78,14 @@ def preprocess(image):
     if isinstance(image[0], PIL.Image.Image):
         w, h = image[0].size
         w, h = map(lambda x: x - x % 8, (w, h))  # resize to integer multiple of 8
-
-        image = [np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))[None, :] for i in image]
+        image = [
+            np.array(i.resize((w, h), resample=PIL_INTERPOLATION["lanczos"]))
+            for i in image
+        ]
+        image = [
+            i[None, ..., None] if i.ndim == 2 else i[None, ...]
+            for i in image
+        ]  # expand [h, w] or [h, w, c] to [b, h, w, c]
         image = np.concatenate(image, axis=0)
         image = np.array(image).astype(np.float32) / 255.0
         image = image.transpose(0, 3, 1, 2)

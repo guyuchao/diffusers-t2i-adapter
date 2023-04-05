@@ -8,7 +8,7 @@ from .modeling_utils import ModelMixin
 from .resnet import Downsample2D
 
 
-class ResnetBlock(nn.Module):
+class BottleneckResnetBlock(nn.Module):
     def __init__(self, in_c, mid_c, out_c, down, ksize=3, sk=False, use_conv=True, proj_ksize=1):
         super().__init__()
         ps = ksize // 2
@@ -122,7 +122,7 @@ class Adapter(ModelMixin, ConfigMixin):
             for j in range(num_res_blocks):
                 if (i != 0) and (j == 0):
                     self.body.append(
-                        ResnetBlock(
+                        BottleneckResnetBlock(
                             block_out_channels[i - 1],
                             block_mid_channels[i],
                             block_mid_channels[i],
@@ -135,7 +135,7 @@ class Adapter(ModelMixin, ConfigMixin):
                     )
                 elif j == num_res_blocks - 1:
                     self.body.append(
-                        ResnetBlock(
+                        BottleneckResnetBlock(
                             block_mid_channels[i],
                             block_mid_channels[i],
                             block_out_channels[i],
@@ -148,7 +148,7 @@ class Adapter(ModelMixin, ConfigMixin):
                     )
                 else:
                     self.body.append(
-                        ResnetBlock(
+                        BottleneckResnetBlock(
                             block_mid_channels[i],
                             block_mid_channels[i],
                             block_mid_channels[i],

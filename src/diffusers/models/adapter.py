@@ -59,7 +59,7 @@ class BottleneckResnetBlock(nn.Module):
 class Adapter(ModelMixin, ConfigMixin):
     r"""
     A simple ResNet-like model that accepts images containing control signals such as keyposes and depth. The model
-    generates multiple feature maps that are used as additional conditioning in`UNet2DConditionModel`. The model's
+    generates multiple feature maps that are used as additional conditioning in [`UNet2DConditionModel`]. The model's
     architecture follows the original implementation of
     [Adapter](https://github.com/TencentARC/T2I-Adapter/blob/686de4681515662c0ac2ffa07bf5dda83af1038a/ldm/modules/encoders/adapter.py#L97)
      and

@@ -80,9 +80,9 @@ class Adapter(ModelMixin, ConfigMixin):
         channels_in (`int`, *optional*, defaults to 3):
             Number of channels of Aapter's input(*control image*). Set this parameter to 1 if you're using gray scale
             image as *control image*.
-        kerenl_size (`int`, *optional*, defaults to 3):
+        kernel_size (`int`, *optional*, defaults to 3):
             Kernel size of conv-2d layers inside ResNet blocks.
-        proj_kerenl_size (`int`, *optional*, defaults to 3):
+        proj_kernel_size (`int`, *optional*, defaults to 3):
             Kernel size of conv-2d projection layers located at the start and end of a downsample block.
         res_block_skip (`bool`, *optional*, defaults to True):
             If set to `True`, ResNet block will using a regular residual connect that add layer's input to its output.
@@ -102,8 +102,8 @@ class Adapter(ModelMixin, ConfigMixin):
         block_mid_channels: Optional[List[int]] = None,
         num_res_blocks: int = 3,
         channels_in: int = 3,
-        kerenl_size: int = 3,
-        proj_kerenl_size: int = 1,
+        kernel_size: int = 3,
+        proj_kernel_size: int = 1,
         res_block_skip: bool = True,
         use_conv: bool = False,
         input_scale_factor: int = 8,
@@ -127,8 +127,8 @@ class Adapter(ModelMixin, ConfigMixin):
                             block_mid_channels[i],
                             block_mid_channels[i],
                             down=True,
-                            ksize=kerenl_size,
-                            proj_ksize=proj_kerenl_size,
+                            ksize=kernel_size,
+                            proj_ksize=proj_kernel_size,
                             sk=res_block_skip,
                             use_conv=use_conv,
                         )
@@ -140,8 +140,8 @@ class Adapter(ModelMixin, ConfigMixin):
                             block_mid_channels[i],
                             block_out_channels[i],
                             down=False,
-                            ksize=kerenl_size,
-                            proj_ksize=proj_kerenl_size,
+                            ksize=kernel_size,
+                            proj_ksize=proj_kernel_size,
                             sk=res_block_skip,
                             use_conv=use_conv,
                         )
@@ -153,8 +153,8 @@ class Adapter(ModelMixin, ConfigMixin):
                             block_mid_channels[i],
                             block_mid_channels[i],
                             down=False,
-                            ksize=kerenl_size,
-                            proj_ksize=proj_kerenl_size,
+                            ksize=kernel_size,
+                            proj_ksize=proj_kernel_size,
                             sk=res_block_skip,
                             use_conv=use_conv,
                         )
@@ -169,9 +169,9 @@ class Adapter(ModelMixin, ConfigMixin):
             self.conv_in = nn.Conv2d(
                 channels_in * input_scale_factor**2,
                 block_mid_channels[0],
-                proj_kerenl_size,
+                proj_kernel_size,
                 1,
-                proj_kerenl_size // 2,
+                proj_kernel_size // 2,
             )
 
     def forward(self, x: torch.Tensor) -> List[torch.Tensor]:

@@ -87,7 +87,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
             block_out_channels=[32, 64],
             channels_in=3,
             num_res_blocks=2,
-            kerenl_size=1,
+            kernel_size=1,
             res_block_skip=True,
             use_conv=False,
             input_scale_factor=vae_scale_factor,

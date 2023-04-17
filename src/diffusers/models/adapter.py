@@ -29,9 +29,9 @@ class BottleneckResnetBlock(nn.Module):
         self.block2 = nn.Conv2d(mid_c, mid_c, ksize, 1, ps)
 
         if sk is False:
-            self.skep = nn.Conv2d(in_c, mid_c, ksize, 1, ps)
+            self.skip = nn.Conv2d(in_c, mid_c, ksize, 1, ps)
         else:
-            self.skep = None
+            self.skip = None
 
         self.down = down
         if self.down is True:
@@ -46,8 +46,8 @@ class BottleneckResnetBlock(nn.Module):
         h = self.block1(x)
         h = self.act(h)
         h = self.block2(h)
-        if self.skep is not None:
-            h = h + self.skep(x)
+        if self.skip is not None:
+            h = h + self.skip(x)
         else:
             h = h + x
 

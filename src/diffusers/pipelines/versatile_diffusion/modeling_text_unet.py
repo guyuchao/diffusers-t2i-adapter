@@ -794,11 +794,11 @@ class UNetFlatConditionModel(ModelMixin, ConfigMixin):
         is_adapter = mid_block_additional_residual is None and down_block_additional_residuals is not None
 
         down_block_res_samples = (sample,)
-        for idx, downsample_block in enumerate(self.down_blocks):
+        for downsample_block in self.down_blocks:
             if hasattr(downsample_block, "has_cross_attention") and downsample_block.has_cross_attention:
                 additional_kwargs = {}
-                if is_adapter and idx < len(down_block_additional_residuals):
-                    additional_kwargs["additional_residuals"] = down_block_additional_residuals[idx]
+                if is_adapter and len(down_block_additional_residuals) > 0:
+                    additional_kwargs["additional_residuals"] = down_block_additional_residuals.pop(0)
 
                 sample, res_samples = downsample_block(
                     hidden_states=sample,
@@ -811,8 +811,8 @@ class UNetFlatConditionModel(ModelMixin, ConfigMixin):
             else:
                 sample, res_samples = downsample_block(hidden_states=sample, temb=emb)
 
-                if is_adapter and idx < len(down_block_additional_residuals):
-                    sample += down_block_additional_residuals[idx]
+                if is_adapter and len(down_block_additional_residuals) > 0:
+                    sample += down_block_additional_residuals.pop(0)
 
             down_block_res_samples += res_samples
 

@@ -12,14 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-""" 
-Conversion script for the T2I-Adapter checkpoints. 
+"""
+Conversion script for the T2I-Adapter checkpoints.
 Only models using the `Adapter-Light` architecture need this conversion,
 the more common used `Adapter` architecture checkpoint can be use by diffuers `T2IAdapter` without conversion.
 """
 
-import re
 import argparse
+import re
 
 import torch
 
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_path", default=None, type=str, required=True, help="Path to the store the result checkpoint."
     )
-    
+
     args = parser.parse_args()
     src_state = torch.load(args.checkpoint_path)
     res_state = convert_adapter_light(src_state)

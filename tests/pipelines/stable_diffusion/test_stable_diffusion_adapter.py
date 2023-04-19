@@ -22,10 +22,10 @@ import torch
 from transformers import CLIPTextConfig, CLIPTextModel, CLIPTokenizer
 
 from diffusers import (
-    Adapter,
     AutoencoderKL,
     PNDMScheduler,
     StableDiffusionAdapterPipeline,
+    T2IAdapter,
     UNet2DConditionModel,
 )
 from diffusers.utils import floats_tensor, load_image, load_numpy, slow, torch_device
@@ -83,7 +83,7 @@ class StableDiffusionAdapterPipelineFastTests(PipelineTesterMixin, unittest.Test
         tokenizer = CLIPTokenizer.from_pretrained("hf-internal-testing/tiny-random-clip")
 
         torch.manual_seed(0)
-        adapter = Adapter(
+        adapter = T2IAdapter(
             block_out_channels=[32, 64],
             channels_in=3,
             num_res_blocks=2,
@@ -183,7 +183,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         return inputs
 
     def test_stable_diffusion_segmentation_adapter(self):
-        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
+        adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
             "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
@@ -202,7 +202,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_keypose_adapter(self):
-        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose")
+        adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
             "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
@@ -221,7 +221,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         assert np.abs(expected_image - image).max() < 5e-3
 
     def test_stable_diffusion_depth_adapter(self):
-        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth")
+        adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-depth")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
             "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None
         )
@@ -244,7 +244,7 @@ class StableDiffusionAdapterPipelineSlowTests(unittest.TestCase):
         torch.cuda.reset_max_memory_allocated()
         torch.cuda.reset_peak_memory_stats()
 
-        adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
+        adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-seg")
         pipe = StableDiffusionAdapterPipeline.from_pretrained(
             "CompVis/stable-diffusion-v1-4", adapter=adapter, safety_checker=None, torch_dtype=torch.float16
         )

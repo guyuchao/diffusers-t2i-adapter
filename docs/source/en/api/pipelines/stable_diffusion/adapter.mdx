@@ -30,7 +30,7 @@ The abstract of the paper is the following:
 
 ## Usage example
 
-In the following we give a simple example of how to use a *Adapter* checkpoint with Diffusers for inference.
+In the following we give a simple example of how to use a *T2IAdapter* checkpoint with Diffusers for inference.
 The inference pipeline is the same for all pipelines:
 
  1. Take an image and run it through a pre-conditioning processor to obtain *control image*.
@@ -65,9 +65,9 @@ After we having `color_palette` in hand, we can create the [`StableDiffusionAdap
 
 ```py
 import torch
-from diffusers import StableDiffusionAdapterPipeline, Adapter
+from diffusers import StableDiffusionAdapterPipeline, T2IAdapter
 
-adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
+adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
 pipe = StableDiffusionAdapterPipeline.from_pretrained(
     "CompVis/stable-diffusion-v1-4",
     adapter=adapter,
@@ -151,10 +151,12 @@ Now we can using `from_adapters` method combine keypose and depth adapter into o
 ```py
 from diffusers import StableDiffusionAdapterPipeline, MultiAdapter
 
-adapters = [
-    Adapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
-    Adapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
-]
+adapters = MultiAdapter(
+    [
+        T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-keypose"),
+        T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-depth"),
+    ]
+)
 adapters = adapters.to(torch.float16)
 
 pipe = StableDiffusionAdapterPipeline.from_pretrained(

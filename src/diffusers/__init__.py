@@ -34,12 +34,12 @@ except OptionalDependencyNotAvailable:
     from .utils.dummy_pt_objects import *  # noqa F403
 else:
     from .models import (
-        Adapter,
         AutoencoderKL,
         ControlNetModel,
         ModelMixin,
         MultiAdapter,
         PriorTransformer,
+        T2IAdapter,
         T5FilmDecoder,
         Transformer2DModel,
         UNet1DModel,

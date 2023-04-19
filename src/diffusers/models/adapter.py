@@ -56,7 +56,7 @@ class BottleneckResnetBlock(nn.Module):
         return h
 
 
-class Adapter(ModelMixin, ConfigMixin):
+class T2IAdapter(ModelMixin, ConfigMixin):
     r"""
     A simple ResNet-like model that accepts images containing control signals such as keyposes and depth. The model
     generates multiple feature maps that are used as additional conditioning in [`UNet2DConditionModel`]. The model's
@@ -108,7 +108,7 @@ class Adapter(ModelMixin, ConfigMixin):
         use_conv: bool = False,
         input_scale_factor: int = 8,
     ):
-        super(Adapter, self).__init__()
+        super(T2IAdapter, self).__init__()
 
         self.num_downsample_blocks = len(block_out_channels)
         self.unshuffle = nn.PixelUnshuffle(input_scale_factor)
@@ -165,7 +165,7 @@ class Adapter(ModelMixin, ConfigMixin):
             # follow standar adapter schema, using fix kernel size 3 for stem conv layer
             self.conv_in = nn.Conv2d(channels_in * input_scale_factor**2, block_mid_channels[0], 3, 1, 1)
         else:
-            # if block_mid_channels[i] < block_out_channels[i](bottleneck downsample block), using light weight adapter schema instead
+            # if block_mid_channels[i] < block_out_channels[i](bottleneck downsample block), using adapter-light schema instead
             self.conv_in = nn.Conv2d(
                 channels_in * input_scale_factor**2,
                 block_mid_channels[0],
@@ -181,9 +181,7 @@ class Adapter(ModelMixin, ConfigMixin):
                 (batch, channel, height, width) input images for adapter model, `channel` should equal to
                 `channels_in`.
         """
-        # unshuffle
         x = self.unshuffle(x)
-        # extract features
         features = []
         x = self.conv_in(x)
         for i in range(self.num_downsample_blocks):
@@ -204,11 +202,11 @@ class MultiAdapter(ModelMixin):
     implements for all the model (such as downloading or saving, etc.)
 
     Parameters:
-        adapters (`List[Adapter]`, *optional*, defaults to None):
-            A list of `Adapter` model instances.
+        adapters (`List[T2IAdapter]`, *optional*, defaults to None):
+            A list of `T2IAdapter` model instances.
     """
 
-    def __init__(self, adapters: List[Adapter]):
+    def __init__(self, adapters: List[T2IAdapter]):
         super(MultiAdapter, self).__init__()
 
         self.num_adapter = len(adapters)

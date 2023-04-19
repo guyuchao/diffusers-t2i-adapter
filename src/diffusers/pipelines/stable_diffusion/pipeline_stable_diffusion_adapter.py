@@ -21,7 +21,7 @@ import torch
 from transformers import CLIPFeatureExtractor, CLIPTextModel, CLIPTokenizer
 
 from ...loaders import TextualInversionLoaderMixin
-from ...models import Adapter, AutoencoderKL, MultiAdapter, UNet2DConditionModel
+from ...models import AutoencoderKL, MultiAdapter, T2IAdapter, UNet2DConditionModel
 from ...schedulers import KarrasDiffusionSchedulers
 from ...utils import (
     PIL_INTERPOLATION,
@@ -50,9 +50,9 @@ EXAMPLE_DOC_STRING = """
         >>> color_palette = color_palette.resize((512, 512), resample=Image.Resampling.NEAREST)
 
         >>> import torch
-        >>> from diffusers import StableDiffusionAdapterPipeline, Adapter
+        >>> from diffusers import StableDiffusionAdapterPipeline, T2IAdapter
 
-        >>> adapter = Adapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
+        >>> adapter = T2IAdapter.from_pretrained("RzZ/sd-v1-4-adapter-color")
         >>> pipe = StableDiffusionAdapterPipeline.from_pretrained(
         ...     "CompVis/stable-diffusion-v1-4",
         ...     adapter=adapter,
@@ -107,7 +107,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
     library implements for all the pipelines (such as downloading or saving, running on a particular device, etc.)
 
     Args:
-        adapter ([`Adapter`] or [`MultiAdapter`] or `List[Adapter]`):
+        adapter ([`T2IAdapter`] or [`MultiAdapter`] or `List[T2IAdapter]`):
             Provides additional conditioning to the unet during the denoising process. If you set multiple Adapter as a
             list, the outputs from each Adapter are added together to create one combined additional conditioning.
         adapter_weights (`List[float]`, *optional*, defaults to None):
@@ -140,7 +140,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
         text_encoder: CLIPTextModel,
         tokenizer: CLIPTokenizer,
         unet: UNet2DConditionModel,
-        adapter: Union[Adapter, MultiAdapter, List[Adapter]],
+        adapter: Union[T2IAdapter, MultiAdapter, List[T2IAdapter]],
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPFeatureExtractor,

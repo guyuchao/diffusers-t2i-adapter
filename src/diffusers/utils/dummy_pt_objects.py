@@ -2,7 +2,7 @@
 from ..utils import DummyObject, requires_backends
 
 
-class Adapter(metaclass=DummyObject):
+class T2IAdapter(metaclass=DummyObject):
     _backends = ["torch"]
 
     def __init__(self, *args, **kwargs):

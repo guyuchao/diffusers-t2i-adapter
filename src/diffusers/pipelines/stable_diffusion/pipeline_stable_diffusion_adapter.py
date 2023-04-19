@@ -243,7 +243,7 @@ class StableDiffusionAdapterPipeline(DiffusionPipeline):
             torch.cuda.empty_cache()  # otherwise we don't see the memory savings (but they probably exist)
 
         hook = None
-        for cpu_offloaded_model in [self.text_encoder, self.unet, self.vae, self.adapter]:
+        for cpu_offloaded_model in [self.text_encoder, self.adapter, self.unet, self.vae]:
             _, hook = cpu_offload_with_hook(cpu_offloaded_model, device, prev_module_hook=hook)
 
         if self.safety_checker is not None:

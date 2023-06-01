@@ -111,7 +111,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
         text_encoder: CLIPTextModel,
         tokenizer: CLIPTokenizer,
         unet: UNet2DConditionModel,
-        adapter: Adapter,
+        # adapter: Adapter,
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPFeatureExtractor,
@@ -128,7 +128,7 @@ class StableDiffusionAdapterPipeline(StableDiffusionPipeline):
             requires_safety_checker
         )
         # TODO: make sure from_pretrain/save_pretrain still work
-        self.register_modules(adapter=adapter)
+        # self.register_modules(adapter=adapter)
         # self.adapter = adapter
     
     @torch.no_grad()
